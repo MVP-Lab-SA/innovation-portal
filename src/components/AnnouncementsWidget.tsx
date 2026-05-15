@@ -78,7 +78,7 @@ export function AnnouncementsWidget() {
                   <div className="text-sm font-bold text-text-primary truncate">{a.title}</div>
                   {a.body && <div className="text-xs text-text-secondary line-clamp-2 mt-0.5">{a.body}</div>}
                   {a.publishedAt && (
-                    <div className="text-xs text-text-muted mt-1">
+                    <div className="text-xs text-text-muted mt-1" suppressHydrationWarning>
                       {new Date(a.publishedAt).toLocaleDateString('ar-SA')}
                     </div>
                   )}

@@ -63,7 +63,7 @@ export function Header({ title, subtitle, showRefresh = false, onRefresh, action
           
           <div className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg bg-ministry-green-soft text-ministry-green-deep text-sm font-medium">
             <Calendar className="w-4 h-4" />
-            <span>{today}</span>
+            <span suppressHydrationWarning>{today}</span>
           </div>
           
           {showRefresh && (
