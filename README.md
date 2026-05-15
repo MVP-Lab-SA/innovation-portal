@@ -1,100 +1,95 @@
 # مركز الابتكار وحلول الأعمال
 
-> منصة Vercel-native متكاملة: **Postgres + Blob + Auth** — كلها من Vercel.
+> منصة Vercel-native متكاملة بالكامل: **Neon Postgres + Neon Auth + Vercel Blob + Sanity CMS**
 
-## ✨ المعمارية
+## 🏗️ المعمارية
 
-- **Frontend + API**: Next.js 14 (App Router) على Vercel
-- **Database**: Vercel Postgres (Neon) - مدمج، مجاني
-- **File Storage**: Vercel Blob - مدمج، مجاني
-- **Authentication**: Email Magic Links (Resend) + Google OAuth اختياري
-- **ORM**: Prisma مع Neon Serverless Adapter
+| الطبقة | التقنية |
+|---|---|
+| **Frontend + API** | Next.js 14 (App Router) |
+| **Database** | Vercel Postgres (Neon Serverless) |
+| **Auth** | Neon Auth (Better Auth) — الإصدار الجديد |
+| **File Storage** | Vercel Blob |
+| **CMS** | Sanity (للمحتوى التحريري) |
+| **ORM** | Prisma + Neon Adapter |
+| **Hosting** | Vercel (Frankfurt) |
+
+## ✨ مميزات Neon Auth
+
+- 🌳 **Auth state يتفرع مع DB**: كل branch له auth منفصل
+- 📧 **Email OTP مدمج**: بدون Resend خارجي
+- 🔵 **Google OAuth مفعّل افتراضياً** (credentials اختبارية)
+- 🗄️ **بيانات المستخدمين في DB**: في `neon_auth.users_sync`
+- ⚡ **متغير واحد فقط**: `NEON_AUTH_BASE_URL` بدلاً من 6+
 
 ---
 
-## 🚀 الإعداد على Vercel (10 دقائق)
+## 🔧 Environment Variables
 
-### ✅ الخطوة 1: قاعدة البيانات (نقرتان)
-
-افتح المشروع في Vercel ثم:
-
-1. اذهب إلى تبويب **Storage**
-2. اضغط **Create Database** → **Neon - Serverless Postgres**
-3. **Region**: `Frankfurt (eu-central-1)` (الأقرب)
-4. اضغط **Create**
-
-✅ سيتم حقن المتغيرات التالية تلقائياً:
-- `POSTGRES_PRISMA_URL`
-- `POSTGRES_URL_NON_POOLING`
-- `POSTGRES_URL`
-- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_DATABASE`
-
-### ✅ الخطوة 2: تخزين الملفات (نقرتان)
-
-نفس تبويب **Storage**:
-
-1. اضغط **Create Database** → **Blob**
-2. اختر اسم: `innovation-files`
-3. اضغط **Create**
-
-✅ سيتم حقن: `BLOB_READ_WRITE_TOKEN`
-
-### ✅ الخطوة 3: البريد الإلكتروني (نقرتان)
-
-نفس تبويب **Storage** → **Integrations Marketplace**:
-
-1. ابحث عن **Resend**
-2. اضغط **Add Integration**
-3. أنشئ مشروع Resend جديد
-4. اربطه بمشروع Vercel
-
-✅ سيتم حقن: `RESEND_API_KEY`
-
-### ✅ الخطوة 4: متغيرات Auth (يدوي - مرة واحدة)
-
-اذهب إلى **Settings → Environment Variables** وأضف:
-
-| Key | Value |
-|---|---|
-| `NEXTAUTH_URL` | `https://innovation-portal-ajalqahtani-momahgovsas-projects.vercel.app` |
-| `NEXTAUTH_SECRET` | شغّل `openssl rand -base64 32` ثم الصق |
-| `ADMIN_EMAIL` | `aj.alqahtani@momah.gov.sa` |
-| `ALLOWED_DOMAINS` | `momah.gov.sa,gov.sa` |
-| `EMAIL_FROM` | `onboarding@resend.dev` (مؤقت) |
-
-### ✅ الخطوة 5: إعادة النشر
-
-في Vercel: **Deployments** → آخر deployment → ⋯ → **Redeploy**
-
-### ✅ الخطوة 6: تهيئة قاعدة البيانات
-
-في المتصفح: افتح `/api/health` لترى الحالة. إذا كان `schema_migrated: false`:
-
+### Auto-injected by Vercel integrations:
 ```bash
-# على جهازك المحلي:
-git clone https://github.com/MVP-Lab-SA/innovation-portal.git
-cd innovation-portal
-npm install
+# Postgres
+POSTGRES_PRISMA_URL=...
+POSTGRES_URL_NON_POOLING=...
+DATABASE_URL=...
 
-# انسخ POSTGRES_PRISMA_URL و POSTGRES_URL_NON_POOLING من Vercel
-echo 'POSTGRES_PRISMA_URL="..."' > .env
-echo 'POSTGRES_URL_NON_POOLING="..."' >> .env
+# Neon Auth (Beta - Better Auth)
+NEON_AUTH_BASE_URL=https://ep-xxx.neonauth.us-east-1.aws.neon.tech/neondb/auth
 
-npm run db:setup   # ينشئ الجداول + يملأ القوائم
+# Vercel Blob
+BLOB_READ_WRITE_TOKEN=...
+```
+
+### Required (manual):
+```bash
+NEON_AUTH_COOKIE_SECRET=<openssl rand -base64 32>
+ADMIN_EMAIL=aj.alqahtani@momah.gov.sa
+ALLOWED_DOMAINS=momah.gov.sa,gov.sa
+```
+
+### Optional - Sanity CMS:
+```bash
+NEXT_PUBLIC_SANITY_PROJECT_ID=vhq6bivv
+NEXT_PUBLIC_SANITY_DATASET=production
+SANITY_API_READ_TOKEN=...
+SANITY_API_WRITE_TOKEN=...
 ```
 
 ---
 
-## 🔐 نظام الأمان
+## 🚀 الإعداد على Vercel
 
-### كيف يعمل تسجيل الدخول؟
+### 1️⃣ تفعيل Neon Auth (نقرة)
 
-1. المستخدم يدخل بريده الإلكتروني
-2. النظام يتحقق من الـ allowlist (`ALLOWED_DOMAINS` أو `ALLOWED_EMAILS`)
-3. إذا مُصرَّح به → يرسل رابطاً سحرياً للبريد عبر Resend
-4. المستخدم يضغط الرابط → يُسجّل دخوله فوراً
+في Neon Console → Project → **Auth** → **Setup**
 
-### الأدوار
+✅ يضيف `NEON_AUTH_BASE_URL` و `NEON_PROJECT_ID` لـ Vercel تلقائياً
+
+### 2️⃣ إضافة Cookie Secret
+
+في Vercel → Settings → Environment Variables:
+
+```
+NEON_AUTH_COOKIE_SECRET = <openssl rand -base64 32>
+ADMIN_EMAIL = aj.alqahtani@momah.gov.sa
+ALLOWED_DOMAINS = momah.gov.sa,gov.sa
+```
+
+### 3️⃣ Vercel Blob (نقرتان)
+
+Vercel → Storage → Create Database → **Blob**
+
+### 4️⃣ تعطيل Vercel Authentication
+
+Settings → Deployment Protection → **Standard Protection** → "Only Preview"
+
+### 5️⃣ Redeploy
+
+Deployments → آخر deployment → Redeploy
+
+---
+
+## 🔐 نظام الصلاحيات (RBAC)
 
 | الإجراء | Admin | Editor | Viewer |
 |---|:---:|:---:|:---:|
@@ -105,17 +100,36 @@ npm run db:setup   # ينشئ الجداول + يملأ القوائم
 | حذف | ✅ | ❌ | ❌ |
 | إدارة المستخدمين | ✅ | ❌ | ❌ |
 
-أول مستخدم يدخل بـ `ADMIN_EMAIL` يصبح Admin تلقائياً.
+أول مستخدم بـ `ADMIN_EMAIL` يصبح Admin تلقائياً.
 
 ---
 
 ## 🩺 التشخيص
 
-افتح `/api/health` لرؤية:
-- هل قاعدة البيانات متصلة؟
-- هل Blob مفعّل؟
-- هل البريد يعمل؟
-- كم مستخدم في النظام؟
+افتح `/api/health` لرؤية حالة كل الخدمات:
+- Database (Neon)
+- Blob storage
+- Sanity CMS
+- Neon Auth
+- Schema migration
+- عدد المستخدمين والقوائم
+
+---
+
+## 📊 اللوحات الـ 10
+
+| الكود | اللوحة |
+|---|---|
+| DASH-01 | اللوحة التنفيذية |
+| DASH-02 | قمع الأفكار |
+| DASH-03 | التحديات والهاكاثونات |
+| DASH-04 | طلبات الساندبوكس |
+| DASH-05 | التجارب التشغيلية |
+| DASH-06 | محفظة المبادرات |
+| DASH-07 | الشركاء والرعايات |
+| DASH-08 | سجل المخاطر |
+| DASH-09 | المؤشرات والأثر |
+| DASH-10 | التواصل والإعلام |
 
 ---
 
@@ -125,41 +139,26 @@ npm run db:setup   # ينشئ الجداول + يملأ القوائم
 src/
 ├── app/
 │   ├── api/
-│   │   ├── auth/[...nextauth]/    # NextAuth handler
-│   │   ├── entities/[entity]/     # CRUD generic
-│   │   ├── dashboards/[id]/       # Analytics APIs
-│   │   ├── lookups/               # Reference lists
-│   │   ├── upload/                # Vercel Blob upload
-│   │   └── health/                # Status check
-│   ├── dashboards/                # 10 لوحات تحليلية
-│   ├── admin/                     # شاشات الإدارة
-│   └── login/                     # تسجيل الدخول
-├── components/                    # UI Components
-├── hooks/                         # React Hooks
+│   │   ├── auth/[...path]/       # Neon Auth handler
+│   │   ├── me/                   # Profile (role) endpoint
+│   │   ├── entities/[entity]/    # Generic CRUD
+│   │   ├── dashboards/[id]/      # Analytics
+│   │   ├── lookups/              # Reference lists
+│   │   ├── upload/               # Vercel Blob
+│   │   ├── sanity/               # CMS content
+│   │   └── health/               # Public diagnostics
+│   ├── dashboards/               # 10 لوحات
+│   ├── admin/                    # شاشات الإدارة
+│   └── login/                    # AuthView من Neon Auth UI
+├── components/
 └── lib/
-    ├── prisma.ts                  # Neon adapter
-    ├── auth.ts                    # NextAuth + Resend
-    ├── blob.ts                    # Vercel Blob helpers
-    ├── crud.ts                    # CRUD factory
-    └── entityConfigs.ts           # Form definitions
+    ├── auth.ts                   # createNeonAuth (server)
+    ├── auth-client.ts            # createAuthClient (client)
+    ├── prisma.ts                 # Neon adapter
+    ├── blob.ts                   # Vercel Blob
+    ├── sanity.ts                 # Sanity CMS
+    └── crud.ts                   # CRUD factory
 ```
-
----
-
-## 📊 اللوحات الـ 10
-
-| الكود | اللوحة | المسار |
-|---|---|---|
-| DASH-01 | اللوحة التنفيذية | `/dashboards/executive` |
-| DASH-02 | قمع الأفكار | `/dashboards/ideas` |
-| DASH-03 | التحديات | `/dashboards/challenges` |
-| DASH-04 | طلبات الساندبوكس | `/dashboards/sandbox` |
-| DASH-05 | التجارب التشغيلية | `/dashboards/pilots` |
-| DASH-06 | محفظة المبادرات | `/dashboards/initiatives` |
-| DASH-07 | الشركاء والرعايات | `/dashboards/partners` |
-| DASH-08 | سجل المخاطر | `/dashboards/risks` |
-| DASH-09 | المؤشرات والأثر | `/dashboards/metrics` |
-| DASH-10 | التواصل والإعلام | `/dashboards/communications` |
 
 ---
 
