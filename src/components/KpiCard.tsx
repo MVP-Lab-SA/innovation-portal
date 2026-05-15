@@ -11,7 +11,7 @@ interface KpiCardProps {
   description?: string;
   trend?: number;
   trendLabel?: string;
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'neutral';
   suffix?: string;
   loading?: boolean;
 }
@@ -22,6 +22,7 @@ const variantStyles = {
   warning: 'before:bg-status-medium',
   danger: 'before:bg-status-critical',
   info: 'before:bg-status-info',
+  neutral: 'before:bg-gray-400',
 };
 
 const iconColors = {
@@ -30,6 +31,7 @@ const iconColors = {
   warning: 'text-status-medium bg-yellow-50',
   danger: 'text-status-critical bg-red-50',
   info: 'text-status-info bg-blue-50',
+  neutral: 'text-gray-600 bg-gray-50',
 };
 
 export function KpiCard({ title, value, icon: Icon, description, trend, trendLabel, variant = 'default', suffix, loading = false }: KpiCardProps) {
