@@ -14,26 +14,30 @@ const NEON_AUTH_COOKIE_SECRET = process.env.NEON_AUTH_COOKIE_SECRET || process.e
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const IS_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 
-// Enforce required env at production *runtime* (not during the build phase,
-// where Next.js imports modules without secrets present).
+// Log critical misconfiguration loudly but DO NOT throw at module load — a
+// throw here crashes every route, not just /api/auth/*. The auth handler
+// itself will fail visibly when actually invoked without proper config.
 if (IS_PRODUCTION && !IS_BUILD) {
   if (!NEON_AUTH_BASE_URL) {
-    throw new Error('NEON_AUTH_BASE_URL must be set in production.');
+    console.error('[CONFIG] NEON_AUTH_BASE_URL is not set in production. Auth will fail.');
   }
-  if (!NEON_AUTH_COOKIE_SECRET || NEON_AUTH_COOKIE_SECRET.length < 32) {
-    throw new Error('NEON_AUTH_COOKIE_SECRET must be set (>=32 chars) in production.');
+  if (!NEON_AUTH_COOKIE_SECRET) {
+    console.error('[CONFIG] NEON_AUTH_COOKIE_SECRET (or NEXTAUTH_SECRET) is not set in production. Sessions WILL NOT WORK.');
+  } else if (NEON_AUTH_COOKIE_SECRET.length < 32) {
+    console.warn('[CONFIG] NEON_AUTH_COOKIE_SECRET is shorter than 32 chars — recommended >=32 for prod.');
   }
 }
 
-// Per-process random secret for dev / build phase. Production requires the
-// real secret (enforced above), so this fallback is never used in prod runtime.
-const DEV_COOKIE_SECRET = NEON_AUTH_COOKIE_SECRET
-  || `dev-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+// Stable per-process random fallback so the module always initializes. In
+// production this is only reached when the operator forgot to set the env
+// var; the critical-config logs above will explain the misconfig.
+const FALLBACK_COOKIE_SECRET = NEON_AUTH_COOKIE_SECRET
+  || `fallback-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
 
 export const auth = createNeonAuth({
   baseUrl: NEON_AUTH_BASE_URL,
   cookies: {
-    secret: NEON_AUTH_COOKIE_SECRET || DEV_COOKIE_SECRET,
+    secret: NEON_AUTH_COOKIE_SECRET || FALLBACK_COOKIE_SECRET,
   },
 });
 
