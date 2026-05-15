@@ -2,14 +2,57 @@
 
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
-import { Lock, AlertCircle } from 'lucide-react';
+import { Suspense, useState } from 'react';
+import { Lock, AlertCircle, Mail, CheckCircle2, Loader2 } from 'lucide-react';
 
 function LoginContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
+  const checkEmail = searchParams.get('check-email');
   const callbackUrl = searchParams.get('callbackUrl') || '/';
   
+  const [email, setEmail] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setSending(true);
+    try {
+      await signIn('email', { email, callbackUrl, redirect: false });
+      setSent(true);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (checkEmail || sent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <div className="card border-2 border-ministry-green/10 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-ministry-green-soft mb-4">
+              <CheckCircle2 className="w-8 h-8 text-ministry-green" />
+            </div>
+            <h2 className="text-2xl font-bold text-ministry-green-deep mb-2">تحقق من بريدك الإلكتروني</h2>
+            <p className="text-text-secondary mb-6">
+              أرسلنا رابط تسجيل الدخول إلى بريدك. اضغط الرابط لإكمال تسجيل الدخول.
+            </p>
+            <div className="p-4 bg-ministry-green-soft rounded-lg text-sm text-ministry-green-deep">
+              💡 الرابط صالح لمدة 24 ساعة فقط ولاستخدام واحد
+            </div>
+            <a href="/login" className="inline-block mt-6 text-sm text-ministry-green hover:underline">
+              ← العودة لشاشة تسجيل الدخول
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -31,17 +74,53 @@ function LoginContent() {
               <span>منصة آمنة محمية</span>
             </div>
             <h2 className="text-xl font-bold text-text-primary mb-1">تسجيل الدخول</h2>
-            <p className="text-sm text-text-secondary">يرجى تسجيل الدخول بحساب Google المصرّح لكم</p>
+            <p className="text-sm text-text-secondary">أدخل بريدك الإلكتروني المُصرَّح به</p>
           </div>
           
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-2">
               <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <div>
-                {error === 'AccessDenied' ? 'هذا الحساب غير مصرّح له بالوصول.' : 'حدث خطأ. حاول مرة أخرى.'}
+                {error === 'AccessDenied' ? 'هذا البريد غير مصرّح له بالوصول.' : 
+                 error === 'Verification' ? 'انتهت صلاحية الرابط أو تم استخدامه. اطلب رابطاً جديداً.' :
+                 'حدث خطأ. حاول مرة أخرى.'}
               </div>
             </div>
           )}
+          
+          {/* Email Magic Link Form */}
+          <form onSubmit={handleEmailSubmit} className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1.5">البريد الإلكتروني</label>
+              <div className="relative">
+                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@momah.gov.sa"
+                  className="input-base pr-9"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={sending || !email.trim()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-ministry-green text-white font-medium hover:bg-ministry-green-deep transition-all duration-200 disabled:opacity-50"
+            >
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+              <span>{sending ? 'جارٍ الإرسال...' : 'إرسال رابط تسجيل الدخول'}</span>
+            </button>
+          </form>
+
+          {/* Google OAuth (only if configured) */}
+          <div className="my-6 flex items-center gap-3">
+            <div className="flex-1 h-px bg-border"></div>
+            <span className="text-xs text-text-muted">أو</span>
+            <div className="flex-1 h-px bg-border"></div>
+          </div>
           
           <button onClick={() => signIn('google', { callbackUrl })}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg border-2 border-border hover:border-ministry-green hover:bg-ministry-green-soft transition-all duration-200 font-medium">
@@ -55,7 +134,9 @@ function LoginContent() {
           </button>
           
           <div className="mt-6 pt-6 border-t border-border text-center">
-            <p className="text-xs text-text-muted">بتسجيل الدخول، فإنك توافق على شروط الاستخدام وسياسة الخصوصية</p>
+            <p className="text-xs text-text-muted">
+              يجب أن يكون بريدك مُصرَّحاً به من قبل المسؤول
+            </p>
           </div>
         </div>
         
