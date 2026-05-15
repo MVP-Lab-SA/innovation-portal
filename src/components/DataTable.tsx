@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { Search, Download, ChevronUp, ChevronDown, Inbox, Plus, Edit, Trash2 } from 'lucide-react';
 import { cn, getStatusVariant, formatDate, formatCurrency } from '@/lib/utils';
 import * as XLSX from 'xlsx';
-import { useSession } from 'next-auth/react';
+import { useEffect } from 'react';
 
 export interface Column {
   key: string;
@@ -34,8 +34,10 @@ export function DataTable({
   emptyMessage = 'لا توجد بيانات', pageSize = 10,
   onAdd, onEdit, onDelete, canEdit, canDelete,
 }: DataTableProps) {
-  const { data: session } = useSession();
-  const role = (session?.user as any)?.role;
+  const [role, setRole] = useState<string | null>(null);
+  useEffect(() => {
+    fetch('/api/me').then(r => r.ok ? r.json() : null).then(p => p?.role && setRole(p.role)).catch(() => {});
+  }, []);
   const userCanEdit = canEdit ?? (role === 'ADMIN' || role === 'EDITOR');
   const userCanDelete = canDelete ?? (role === 'ADMIN');
   

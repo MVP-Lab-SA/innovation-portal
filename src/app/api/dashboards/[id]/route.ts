@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getSessionWithProfile } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 /**
  * Returns aggregated data for each dashboard
- * GET /api/dashboards/executive
- * GET /api/dashboards/sandbox
- * etc.
  */
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const session = await getSessionWithProfile();
+  if (!session?.profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   
   const dashboardId = params.id;
   

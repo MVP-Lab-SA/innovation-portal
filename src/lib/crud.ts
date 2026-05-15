@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions, canEdit, canAdmin } from './auth';
+import { getSessionWithProfile, canEdit, canAdmin } from './auth';
 import { prisma } from './prisma';
 import type { Prisma } from '@prisma/client';
 
@@ -10,13 +9,9 @@ interface CrudOptions {
   searchFields?: string[];
   defaultOrderBy?: Record<string, 'asc' | 'desc'>;
   include?: Record<string, any>;
-  codePrefix?: string; // e.g., "INI" for Initiative
+  codePrefix?: string;
 }
 
-/**
- * Generate the next sequential code for a model
- * e.g., INI-001, INI-002, ...
- */
 async function generateNextCode(model: any, prefix: string): Promise<string> {
   const last = await model.findFirst({
     where: { code: { startsWith: `${prefix}-` } },
@@ -28,13 +23,10 @@ async function generateNextCode(model: any, prefix: string): Promise<string> {
   return `${prefix}-${String(num).padStart(3, '0')}`;
 }
 
-/**
- * Generic GET handler for listing records with pagination, search, filters
- */
 export function createListHandler(modelName: keyof typeof prisma, options: CrudOptions = {}) {
   return async function GET(request: NextRequest) {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await getSessionWithProfile();
+    if (!session?.profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -50,7 +42,6 @@ export function createListHandler(modelName: keyof typeof prisma, options: CrudO
       }));
     }
     
-    // Apply filters from query params (any param starting with "filter_")
     searchParams.forEach((value, key) => {
       if (key.startsWith('filter_')) {
         const field = key.replace('filter_', '');
@@ -73,12 +64,7 @@ export function createListHandler(modelName: keyof typeof prisma, options: CrudO
       
       return NextResponse.json({
         data,
-        pagination: {
-          page,
-          pageSize,
-          total,
-          totalPages: Math.ceil(total / pageSize),
-        },
+        pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
       });
     } catch (error: any) {
       console.error(`Error listing ${String(modelName)}:`, error);
@@ -87,14 +73,11 @@ export function createListHandler(modelName: keyof typeof prisma, options: CrudO
   };
 }
 
-/**
- * Generic POST handler for creating new records
- */
 export function createCreateHandler(modelName: keyof typeof prisma, options: CrudOptions = {}) {
   return async function POST(request: NextRequest) {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!canEdit((session.user as any).role)) {
+    const session = await getSessionWithProfile();
+    if (!session?.profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!canEdit(session.profile.role)) {
       return NextResponse.json({ error: 'Forbidden - editor role required' }, { status: 403 });
     }
     
@@ -102,18 +85,12 @@ export function createCreateHandler(modelName: keyof typeof prisma, options: Cru
       const body = await request.json();
       const model = (prisma as any)[modelName];
       
-      // Auto-generate code if prefix is provided and code not given
       if (options.codePrefix && !body.code) {
         body.code = await generateNextCode(model, options.codePrefix);
       }
       
-      // Clean empty strings to null for optional fields
       Object.keys(body).forEach(key => {
         if (body[key] === '') body[key] = null;
-      });
-      
-      // Convert date strings to Date objects
-      Object.keys(body).forEach(key => {
         if (key.toLowerCase().includes('date') && typeof body[key] === 'string' && body[key]) {
           body[key] = new Date(body[key]);
         }
@@ -121,10 +98,9 @@ export function createCreateHandler(modelName: keyof typeof prisma, options: Cru
       
       const created = await model.create({ data: body, include: options.include });
       
-      // Audit log
       await prisma.auditLog.create({
         data: {
-          userId: (session.user as any).id,
+          userId: session.profile.id,
           action: 'CREATE',
           entity: String(modelName),
           entityId: created.id,
@@ -140,14 +116,11 @@ export function createCreateHandler(modelName: keyof typeof prisma, options: Cru
   };
 }
 
-/**
- * Generic single-record handlers (GET, PATCH, DELETE)
- */
 export function createRecordHandlers(modelName: keyof typeof prisma, options: CrudOptions = {}) {
   return {
     async GET(_request: NextRequest, { params }: { params: { id: string } }) {
-      const session = await getServerSession(authOptions);
-      if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      const session = await getSessionWithProfile();
+      if (!session?.profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       
       try {
         const model = (prisma as any)[modelName];
@@ -163,9 +136,9 @@ export function createRecordHandlers(modelName: keyof typeof prisma, options: Cr
     },
     
     async PATCH(request: NextRequest, { params }: { params: { id: string } }) {
-      const session = await getServerSession(authOptions);
-      if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      if (!canEdit((session.user as any).role)) {
+      const session = await getSessionWithProfile();
+      if (!session?.profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      if (!canEdit(session.profile.role)) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
       
@@ -180,7 +153,6 @@ export function createRecordHandlers(modelName: keyof typeof prisma, options: Cr
           }
         });
         
-        // Don't allow id/code changes via PATCH
         delete body.id;
         delete body.code;
         
@@ -192,7 +164,7 @@ export function createRecordHandlers(modelName: keyof typeof prisma, options: Cr
         
         await prisma.auditLog.create({
           data: {
-            userId: (session.user as any).id,
+            userId: session.profile.id,
             action: 'UPDATE',
             entity: String(modelName),
             entityId: params.id,
@@ -207,9 +179,9 @@ export function createRecordHandlers(modelName: keyof typeof prisma, options: Cr
     },
     
     async DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
-      const session = await getServerSession(authOptions);
-      if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      if (!canAdmin((session.user as any).role)) {
+      const session = await getSessionWithProfile();
+      if (!session?.profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      if (!canAdmin(session.profile.role)) {
         return NextResponse.json({ error: 'Forbidden - admin only' }, { status: 403 });
       }
       
@@ -219,7 +191,7 @@ export function createRecordHandlers(modelName: keyof typeof prisma, options: Cr
         
         await prisma.auditLog.create({
           data: {
-            userId: (session.user as any).id,
+            userId: session.profile.id,
             action: 'DELETE',
             entity: String(modelName),
             entityId: params.id,
@@ -234,9 +206,6 @@ export function createRecordHandlers(modelName: keyof typeof prisma, options: Cr
   };
 }
 
-/**
- * Model registry — maps URL slug to Prisma model name + options
- */
 export const MODEL_REGISTRY: Record<string, { model: keyof typeof prisma; options: CrudOptions; arabicName: string }> = {
   'employees': { model: 'employee', options: { codePrefix: 'EMP', searchFields: ['code', 'fullName', 'email', 'department'] }, arabicName: 'الموظفون' },
   'initiatives': { model: 'initiative', options: { codePrefix: 'INI', searchFields: ['code', 'name', 'description'] }, arabicName: 'المبادرات' },

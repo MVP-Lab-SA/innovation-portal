@@ -1,11 +1,15 @@
-export { default } from 'next-auth/middleware';
+import { auth } from '@/lib/auth';
+
+export default auth.middleware({
+  loginUrl: '/login',
+});
 
 export const config = {
   matcher: [
     /*
      * Protect all routes EXCEPT:
      * - /login (auth page)
-     * - /api/auth/* (NextAuth endpoints)
+     * - /api/auth/* (Neon Auth endpoints)
      * - /api/health (public diagnostics)
      * - /_next/* (Next.js internals)
      */

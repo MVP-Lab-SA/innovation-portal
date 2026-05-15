@@ -1,6 +1,17 @@
 'use client';
-import { SessionProvider } from 'next-auth/react';
+
+import { NeonAuthUIProvider } from '@neondatabase/auth-ui';
+import { authClient } from '@/lib/auth-client';
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>;
+  return (
+    <NeonAuthUIProvider 
+      authClient={authClient}
+      redirectTo="/"
+      emailOTP
+      social={{ providers: ['google'] }}
+    >
+      {children}
+    </NeonAuthUIProvider>
+  );
 }

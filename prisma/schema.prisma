@@ -13,7 +13,9 @@ datasource db {
 }
 
 // ============================================================
-// AUTHENTICATION & AUTHORIZATION
+// AUTHORIZATION (Neon Auth handles authentication separately)
+// User profiles are synced from neon_auth.users_sync
+// We add role + active for RBAC
 // ============================================================
 
 enum UserRole {
@@ -27,51 +29,19 @@ model User {
   email         String    @unique
   name          String?
   image         String?
+  // Link to Neon Auth user (better-auth user.id)
+  neonAuthId    String?   @unique
   role          UserRole  @default(VIEWER)
   active        Boolean   @default(true)
   lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
-  accounts      Account[]
-  sessions      Session[]
   auditLogs     AuditLog[]
   
   @@index([email])
   @@index([role])
-}
-
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-  @@unique([identifier, token])
+  @@index([neonAuthId])
 }
 
 // Audit log for tracking changes

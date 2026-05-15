@@ -1,14 +1,16 @@
 import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getSessionWithProfile } from '@/lib/auth';
 import Link from 'next/link';
 import { AppShell } from '@/components/AppShell';
 import { DASHBOARDS } from '@/components/Sidebar';
 import { LayoutDashboard, Sparkles, Activity, Database, ArrowLeft } from 'lucide-react';
 
 export default async function HomePage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect('/login');
+  const session = await getSessionWithProfile();
+  if (!session?.profile) redirect('/login');
+  
+  const userName = session.profile.name?.split(' ')[0] || 'بك';
+  const isAdmin = session.profile.role === 'ADMIN';
   
   return (
     <AppShell title="مركز الابتكار وحلول الأعمال" subtitle="منصة متكاملة لإدارة وتحليل مبادرات الابتكار">
@@ -23,7 +25,7 @@ export default async function HomePage() {
             <span>قاعدة بيانات Neon Postgres • بيانات فورية</span>
           </div>
           <h2 className="text-3xl md:text-4xl font-extrabold mb-3">
-            مرحباً، {session.user?.name?.split(' ')[0] || 'بك'} 👋
+            مرحباً، {userName} 👋
           </h2>
           <p className="text-white/80 text-base md:text-lg max-w-2xl">
             استكشف 10 لوحات تحليلية تفاعلية تغطّي كل من الأفكار والتحديات والمبادرات والشراكات.
@@ -34,7 +36,7 @@ export default async function HomePage() {
               <span>اللوحة التنفيذية</span>
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            {(session.user as any)?.role === 'ADMIN' && (
+            {isAdmin && (
               <Link href="/admin/data" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/15 backdrop-blur-sm text-white font-medium hover:bg-white/25 transition-all border border-white/20">
                 <Database className="w-4 h-4" />
                 <span>إدارة البيانات</span>

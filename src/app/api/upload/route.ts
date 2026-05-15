@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions, canEdit } from '@/lib/auth';
+import { getSessionWithProfile, canEdit } from '@/lib/auth';
 import { uploadFile, isBlobConfigured } from '@/lib/blob';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!canEdit((session.user as any).role)) {
+  const session = await getSessionWithProfile();
+  if (!session?.profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!canEdit(session.profile.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -43,7 +42,7 @@ export async function POST(request: NextRequest) {
       pathname: blob.pathname,
       contentType: blob.contentType,
       size: file.size,
-      uploadedBy: session.user?.email,
+      uploadedBy: session.profile?.email,
       uploadedAt: new Date().toISOString(),
     });
   } catch (error: any) {

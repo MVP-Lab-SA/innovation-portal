@@ -1,15 +1,14 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Lightbulb, Trophy, TestTube, FlaskConical,
   Briefcase, Users, AlertTriangle, Target, Megaphone,
   ChevronLeft, Sparkles, Settings, Database, ChevronDown,
 } from 'lucide-react';
-import { useState } from 'react';
 
 interface NavItem {
   id: string;
@@ -47,10 +46,15 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname();
-  const { data: session } = useSession();
-  const userRole = (session?.user as any)?.role;
+  const [userRole, setUserRole] = useState<string | null>(null);
   const isAdmin = userRole === 'ADMIN';
   const [adminOpen, setAdminOpen] = useState(pathname?.startsWith('/admin'));
+  
+  useEffect(() => {
+    fetch('/api/me').then(r => r.ok ? r.json() : null).then(p => {
+      if (p?.role) setUserRole(p.role);
+    }).catch(() => {});
+  }, []);
 
   return (
     <aside className={cn(

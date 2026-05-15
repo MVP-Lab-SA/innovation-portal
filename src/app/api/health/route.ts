@@ -35,8 +35,8 @@ export async function GET() {
     },
     
     auth: {
-      nextauth_url: !!process.env.NEXTAUTH_URL,
-      nextauth_secret: !!process.env.NEXTAUTH_SECRET,
+      neon_auth_url: !!process.env.NEON_AUTH_BASE_URL,
+      cookie_secret: !!(process.env.NEON_AUTH_COOKIE_SECRET || process.env.NEXTAUTH_SECRET),
       google_oauth: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
       email_resend: !!process.env.RESEND_API_KEY,
     },
