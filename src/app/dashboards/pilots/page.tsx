@@ -14,7 +14,7 @@ export default function PilotsDashboard() {
   const list = data?.list || [];
 
   return (
-    <AppShell title="التجارب التشغيلية" subtitle="DASH-05 — إدارة التجارب الميدانية" showRefresh onRefresh={refresh}>
+    <AppShell title="التجارب التشغيلية" subtitle="DASH-05 — إدارة التجارب الميدانية" showRefresh onRefresh={refresh} manageEntity="pilots">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <KpiCard title="إجمالي التجارب" value={k.total || 0} icon={FlaskConical} variant="default" loading={loading} />
         <KpiCard title="جارية" value={k.running || 0} icon={Play} variant="info" loading={loading} />

@@ -14,7 +14,7 @@ export default function RisksDashboard() {
   const list = data?.list || [];
 
   return (
-    <AppShell title="سجل المخاطر" subtitle="DASH-08 — متابعة وإدارة المخاطر" showRefresh onRefresh={refresh}>
+    <AppShell title="سجل المخاطر" subtitle="DASH-08 — متابعة وإدارة المخاطر" showRefresh onRefresh={refresh} manageEntity="risks">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <KpiCard title="إجمالي المخاطر" value={k.total || 0} icon={AlertTriangle} variant="default" loading={loading} />
         <KpiCard title="حرجة" value={k.critical || 0} icon={AlertOctagon} variant="danger" loading={loading} />

@@ -14,7 +14,7 @@ export default function MetricsDashboard() {
   const list = data?.list || [];
 
   return (
-    <AppShell title="المؤشرات والأثر" subtitle="DASH-09 — قياس الأداء والإنجاز" showRefresh onRefresh={refresh}>
+    <AppShell title="المؤشرات والأثر" subtitle="DASH-09 — قياس الأداء والإنجاز" showRefresh onRefresh={refresh} manageEntity="metrics">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <KpiCard title="إجمالي المؤشرات" value={k.total || 0} icon={Target} variant="default" loading={loading} />
         <KpiCard title="على المسار" value={k.onTrack || 0} icon={TrendingUp} variant="success" loading={loading} />

@@ -3,6 +3,7 @@
 import { AppShell } from '@/components/AppShell';
 import { KpiCard } from '@/components/KpiCard';
 import { ChartContainer, DonutChart, BarChartComponent } from '@/components/Charts';
+import { AnnouncementsWidget } from '@/components/AnnouncementsWidget';
 import { useDashboard } from '@/hooks/useData';
 import { Lightbulb, Briefcase, FlaskConical, Users, AlertTriangle, Target, Trophy, TestTube } from 'lucide-react';
 
@@ -24,11 +25,16 @@ export default function ExecutiveDashboard() {
         <KpiCard title="طلبات الساندبوكس" value={k.sandboxApplications || 0} icon={TestTube} variant="info" loading={loading} />
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartContainer title="حالات المبادرات" description="التوزيع الحالي"><DonutChart data={c.initiativeStatus || []} /></ChartContainer>
-        <ChartContainer title="مراحل الأفكار" description="مسار قمع الأفكار"><BarChartComponent data={c.ideasStage || []} horizontal /></ChartContainer>
-        <ChartContainer title="أنواع الشركاء" description="توزيع الشراكات"><DonutChart data={c.partnersType || []} /></ChartContainer>
-        <ChartContainer title="فئات التحديات" description="التصنيف الموضوعي"><BarChartComponent data={c.challengeCategory || []} /></ChartContainer>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ChartContainer title="حالات المبادرات" description="التوزيع الحالي"><DonutChart data={c.initiativeStatus || []} /></ChartContainer>
+          <ChartContainer title="مراحل الأفكار" description="مسار قمع الأفكار"><BarChartComponent data={c.ideasStage || []} horizontal /></ChartContainer>
+          <ChartContainer title="أنواع الشركاء" description="توزيع الشراكات"><DonutChart data={c.partnersType || []} /></ChartContainer>
+          <ChartContainer title="فئات التحديات" description="التصنيف الموضوعي"><BarChartComponent data={c.challengeCategory || []} /></ChartContainer>
+        </div>
+        <div className="lg:col-span-1">
+          <AnnouncementsWidget />
+        </div>
       </div>
     </AppShell>
   );

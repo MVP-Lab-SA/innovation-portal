@@ -43,8 +43,8 @@ export function DonutChart({ data, height = 280, innerRadius = 60, outerRadius =
     <ResponsiveContainer width="100%" height={height}>
       <PieChart>
         <Pie data={data} cx="50%" cy="50%" innerRadius={innerRadius} outerRadius={outerRadius} paddingAngle={2} dataKey="value" startAngle={90} endAngle={-270}>
-          {data.map((_, index) => (
-            <Cell key={index} fill={colors[index % colors.length]} stroke="#fff" strokeWidth={2} />
+          {data.map((entry, index) => (
+            <Cell key={entry.name ?? index} fill={colors[index % colors.length]} stroke="#fff" strokeWidth={2} />
           ))}
         </Pie>
         <Tooltip content={<CustomTooltip />} />

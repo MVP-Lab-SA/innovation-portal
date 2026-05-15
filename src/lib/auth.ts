@@ -9,37 +9,46 @@ const ALLOWED_EMAILS = (process.env.ALLOWED_EMAILS || '')
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase();
 
 const NEON_AUTH_BASE_URL = process.env.NEON_AUTH_BASE_URL || '';
-const NEON_AUTH_COOKIE_SECRET = process.env.NEON_AUTH_COOKIE_SECRET 
-  || process.env.NEXTAUTH_SECRET 
-  || 'INSECURE_FALLBACK_xK7vMpQ2rN8sB4cY6jL1wF9hT3uX5dG0';
+const NEON_AUTH_COOKIE_SECRET = process.env.NEON_AUTH_COOKIE_SECRET || process.env.NEXTAUTH_SECRET || '';
 
-if (!NEON_AUTH_BASE_URL && process.env.NODE_ENV === 'production') {
-  console.error('⚠️ NEON_AUTH_BASE_URL is not set. Auth will fail.');
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const IS_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
+
+// Enforce required env at production *runtime* (not during the build phase,
+// where Next.js imports modules without secrets present).
+if (IS_PRODUCTION && !IS_BUILD) {
+  if (!NEON_AUTH_BASE_URL) {
+    throw new Error('NEON_AUTH_BASE_URL must be set in production.');
+  }
+  if (!NEON_AUTH_COOKIE_SECRET || NEON_AUTH_COOKIE_SECRET.length < 32) {
+    throw new Error('NEON_AUTH_COOKIE_SECRET must be set (>=32 chars) in production.');
+  }
 }
 
-/**
- * Neon Auth server instance.
- * Provides: handler(), middleware(), getSession(), signIn, signOut, etc.
- */
+// Per-process random secret for dev / build phase. Production requires the
+// real secret (enforced above), so this fallback is never used in prod runtime.
+const DEV_COOKIE_SECRET = NEON_AUTH_COOKIE_SECRET
+  || `dev-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+
 export const auth = createNeonAuth({
   baseUrl: NEON_AUTH_BASE_URL,
   cookies: {
-    secret: NEON_AUTH_COOKIE_SECRET,
+    secret: NEON_AUTH_COOKIE_SECRET || DEV_COOKIE_SECRET,
   },
 });
 
 export type Role = UserRole;
 
-/**
- * Check if user is allowed (allowlist check)
- */
+/** Allowlist check — emails admin/allowed/domain are accepted. No NODE_ENV bypass. */
 export function isAllowedEmail(email: string): boolean {
   const lower = email.toLowerCase();
   if (ALLOWED_EMAILS.includes(lower)) return true;
   const domain = lower.split('@')[1];
   if (domain && ALLOWED_DOMAINS.includes(domain)) return true;
-  if (lower === ADMIN_EMAIL) return true;
-  return process.env.NODE_ENV === 'development';
+  if (ADMIN_EMAIL && lower === ADMIN_EMAIL) return true;
+  // Explicit opt-in for local development (must be set deliberately, never in prod).
+  if (!IS_PRODUCTION && process.env.DEV_ALLOW_ANY_EMAIL === 'true') return true;
+  return false;
 }
 
 /**
@@ -54,13 +63,11 @@ export async function getSessionWithProfile() {
     const email = session.user.email?.toLowerCase();
     if (!email) return null;
 
-    // Check allowlist
     if (!isAllowedEmail(email)) {
       return { session, profile: null, allowed: false };
     }
 
-    // Sync to our User table (creates profile on first login)
-    const isFirstAdmin = email === ADMIN_EMAIL;
+    const isFirstAdmin = ADMIN_EMAIL && email === ADMIN_EMAIL;
     const profile = await prisma.user.upsert({
       where: { email },
       update: {
@@ -83,20 +90,51 @@ export async function getSessionWithProfile() {
 
     return { session, profile, allowed: true };
   } catch (error) {
-    console.error('Session error:', error);
+    console.error('session_error', error);
     return null;
   }
 }
 
-/** Authorization helpers */
-export function canEdit(role?: string | null): boolean { 
-  return role === 'ADMIN' || role === 'EDITOR'; 
+export function canEdit(role?: string | null): boolean {
+  return role === 'ADMIN' || role === 'EDITOR';
 }
-export function canAdmin(role?: string | null): boolean { 
-  return role === 'ADMIN'; 
+export function canAdmin(role?: string | null): boolean {
+  return role === 'ADMIN';
 }
 
-/** Check if Neon Auth is configured */
 export function isNeonAuthConfigured(): boolean {
   return !!NEON_AUTH_BASE_URL;
+}
+
+/**
+ * Per-entity access matrix.
+ * Returns true when (role, entity, action) is allowed.
+ * Defaults: VIEWER read-only on safe entities; EDITOR can write most; ADMIN-only on
+ * sensitive ones (User, AuditLog). Update this matrix when adding new entities.
+ */
+type CrudAction = 'read' | 'create' | 'update' | 'delete';
+const ADMIN_ONLY_ENTITIES = new Set([
+  'users', 'user',
+  'audit-log', 'auditLog',
+]);
+const ADMIN_OR_EDITOR_READ_ENTITIES = new Set([
+  // PII-bearing — keep out of VIEWER
+  'employees', 'employee',
+  'experts', 'expert',
+  'cems', 'cem',
+  'sandbox-applications', 'sandboxApplication',
+]);
+
+export function canAccess(
+  role: string | null | undefined,
+  entity: string,
+  action: CrudAction,
+): boolean {
+  if (!role) return false;
+  if (ADMIN_ONLY_ENTITIES.has(entity)) return role === 'ADMIN';
+  if (action === 'delete') return role === 'ADMIN';
+  if (action === 'create' || action === 'update') return canEdit(role);
+  // read
+  if (ADMIN_OR_EDITOR_READ_ENTITIES.has(entity)) return canEdit(role);
+  return true;
 }

@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Lightbulb, Trophy, TestTube, FlaskConical,
   Briefcase, Users, AlertTriangle, Target, Megaphone,
-  ChevronLeft, Sparkles, Settings, Database, ChevronDown,
+  ChevronLeft, Sparkles, Settings, Database, ChevronDown, History,
 } from 'lucide-react';
 
 interface NavItem {
@@ -37,6 +37,7 @@ export const ADMIN_ITEMS: NavItem[] = [
   { id: 'data', title: 'إدارة البيانات', href: '/admin/data', icon: Database },
   { id: 'users', title: 'إدارة المستخدمين', href: '/admin/users', icon: Users },
   { id: 'lookups', title: 'القوائم المرجعية', href: '/admin/lookups', icon: Settings },
+  { id: 'audit-log', title: 'سجل التغييرات', href: '/admin/audit-log', icon: History },
 ];
 
 interface SidebarProps {

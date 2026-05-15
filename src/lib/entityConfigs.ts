@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { FieldConfig } from '@/components/forms/EntityForm';
 
 export interface EntityConfig {
@@ -7,6 +8,14 @@ export interface EntityConfig {
   icon?: string;
   listColumns: { key: string; label: string; type?: any }[];
   formFields: FieldConfig[];
+}
+
+export interface EntityValidation {
+  writableFields: string[];
+  sortableFields: string[];
+  filterableFields: string[];
+  createSchema: z.ZodTypeAny;
+  updateSchema: z.ZodTypeAny;
 }
 
 export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
@@ -340,6 +349,287 @@ export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
       { key: 'status', label: 'الحالة', lookupCategory: 'DocumentStatus' },
     ],
   },
+
+  milestones: {
+    slug: 'milestones',
+    arabicName: 'المراحل الرئيسية',
+    description: 'مراحل تنفيذ المبادرات',
+    listColumns: [
+      { key: 'code', label: 'المعرّف', type: 'badge' },
+      { key: 'name', label: 'الاسم' },
+      { key: 'status', label: 'الحالة', type: 'status' },
+      { key: 'progress', label: 'التقدم %' },
+      { key: 'dueDate', label: 'الاستحقاق', type: 'date' },
+    ],
+    formFields: [
+      { key: 'initiativeId', label: 'معرّف المبادرة (INI-...)', required: true, helperText: 'الصق ID المبادرة المرتبطة' },
+      { key: 'name', label: 'اسم المرحلة', required: true },
+      { key: 'description', label: 'الوصف', type: 'textarea', cols: 2 },
+      { key: 'status', label: 'الحالة', lookupCategory: 'MilestoneStatus' },
+      { key: 'progress', label: 'التقدم (0-100)', type: 'number' },
+      { key: 'dueDate', label: 'تاريخ الاستحقاق', type: 'date' },
+      { key: 'completedDate', label: 'تاريخ الإنجاز', type: 'date' },
+    ],
+  },
+
+  tasks: {
+    slug: 'tasks',
+    arabicName: 'المهام',
+    description: 'مهام المبادرات والفرق',
+    listColumns: [
+      { key: 'code', label: 'المعرّف', type: 'badge' },
+      { key: 'title', label: 'العنوان' },
+      { key: 'priority', label: 'الأولوية', type: 'badge' },
+      { key: 'status', label: 'الحالة', type: 'status' },
+      { key: 'dueDate', label: 'الاستحقاق', type: 'date' },
+    ],
+    formFields: [
+      { key: 'title', label: 'عنوان المهمة', required: true, cols: 2 },
+      { key: 'description', label: 'الوصف', type: 'textarea', cols: 2 },
+      { key: 'initiativeId', label: 'معرّف المبادرة (اختياري)', helperText: 'INI-... إن كانت مرتبطة' },
+      { key: 'assigneeId', label: 'معرّف المسؤول (اختياري)', helperText: 'EMP-... إن كان مسنداً' },
+      { key: 'priority', label: 'الأولوية', lookupCategory: 'Priority' },
+      { key: 'status', label: 'الحالة', lookupCategory: 'TaskStatus' },
+      { key: 'dueDate', label: 'تاريخ الاستحقاق', type: 'date' },
+      { key: 'completedAt', label: 'تاريخ الإنجاز', type: 'date' },
+    ],
+  },
+
+  evaluations: {
+    slug: 'evaluations',
+    arabicName: 'التقييمات',
+    description: 'تقييمات الأفكار والمشاريع',
+    listColumns: [
+      { key: 'code', label: 'المعرّف', type: 'badge' },
+      { key: 'overallScore', label: 'الدرجة' },
+      { key: 'status', label: 'الحالة', type: 'status' },
+      { key: 'evaluationDate', label: 'التاريخ', type: 'date' },
+    ],
+    formFields: [
+      { key: 'ideaId', label: 'معرّف الفكرة (اختياري)', helperText: 'IDE-... إن كان التقييم لفكرة' },
+      { key: 'expertId', label: 'معرّف الخبير (اختياري)', helperText: 'SME-...' },
+      { key: 'leadEmployeeId', label: 'معرّف القائد (اختياري)', helperText: 'EMP-...' },
+      { key: 'evaluationDate', label: 'تاريخ التقييم', type: 'date' },
+      { key: 'overallScore', label: 'الدرجة الكلية', type: 'number' },
+      { key: 'status', label: 'الحالة', lookupCategory: 'EvaluationStatus' },
+      { key: 'recommendation', label: 'التوصية', type: 'textarea', cols: 2 },
+      { key: 'comments', label: 'ملاحظات', type: 'textarea', cols: 2 },
+    ],
+  },
+
+  'eval-rubrics': {
+    slug: 'eval-rubrics',
+    arabicName: 'معايير التقييم',
+    description: 'تعريف معايير ودرجات التقييم',
+    listColumns: [
+      { key: 'code', label: 'المعرّف', type: 'badge' },
+      { key: 'criterionName', label: 'المعيار' },
+      { key: 'weight', label: 'الوزن' },
+      { key: 'evaluationStage', label: 'المرحلة', type: 'badge' },
+      { key: 'active', label: 'مفعّل' },
+    ],
+    formFields: [
+      { key: 'criterionName', label: 'اسم المعيار', required: true, cols: 2 },
+      { key: 'criterionDesc', label: 'الوصف', type: 'textarea', cols: 2 },
+      { key: 'weight', label: 'الوزن (0-1)', type: 'number', required: true },
+      { key: 'scoreScale', label: 'مقياس الدرجات' },
+      { key: 'evaluationStage', label: 'مرحلة التقييم', lookupCategory: 'EvaluationStage' },
+    ],
+  },
+
+  sponsorships: {
+    slug: 'sponsorships',
+    arabicName: 'الرعايات',
+    description: 'إدارة رعايات الشركاء',
+    listColumns: [
+      { key: 'code', label: 'المعرّف', type: 'badge' },
+      { key: 'sponsorshipTier', label: 'المستوى', type: 'badge' },
+      { key: 'totalValueSar', label: 'القيمة', type: 'currency' },
+      { key: 'status', label: 'الحالة', type: 'status' },
+      { key: 'startDate', label: 'البدء', type: 'date' },
+    ],
+    formFields: [
+      { key: 'partnerId', label: 'معرّف الشريك', required: true, helperText: 'PRT-...' },
+      { key: 'sponsorshipType', label: 'نوع الرعاية', lookupCategory: 'SponsorshipType' },
+      { key: 'sponsorshipTier', label: 'المستوى', lookupCategory: 'SponsorshipTier' },
+      { key: 'cashValueSar', label: 'القيمة النقدية (ر.س)', type: 'currency' },
+      { key: 'inKindValueSar', label: 'القيمة العينية (ر.س)', type: 'currency' },
+      { key: 'servicesValueSar', label: 'قيمة الخدمات (ر.س)', type: 'currency' },
+      { key: 'startDate', label: 'تاريخ البدء', type: 'date' },
+      { key: 'endDate', label: 'تاريخ الانتهاء', type: 'date' },
+      { key: 'status', label: 'الحالة', lookupCategory: 'SponsorshipStatus' },
+      { key: 'notes', label: 'ملاحظات', type: 'textarea', cols: 2 },
+    ],
+  },
+
+  'partner-interactions': {
+    slug: 'partner-interactions',
+    arabicName: 'تفاعلات الشركاء',
+    description: 'سجل اللقاءات والتواصل مع الشركاء',
+    listColumns: [
+      { key: 'code', label: 'المعرّف', type: 'badge' },
+      { key: 'interactionType', label: 'النوع', type: 'badge' },
+      { key: 'subject', label: 'الموضوع' },
+      { key: 'interactionDate', label: 'التاريخ', type: 'date' },
+    ],
+    formFields: [
+      { key: 'partnerId', label: 'معرّف الشريك', required: true, helperText: 'PRT-...' },
+      { key: 'interactionType', label: 'نوع التفاعل', lookupCategory: 'InteractionType' },
+      { key: 'interactionDate', label: 'تاريخ التفاعل', type: 'date', required: true },
+      { key: 'subject', label: 'الموضوع', cols: 2 },
+      { key: 'summary', label: 'الملخص', type: 'textarea', cols: 2 },
+      { key: 'outcome', label: 'النتيجة', type: 'textarea', cols: 2 },
+      { key: 'followUpDate', label: 'تاريخ المتابعة', type: 'date' },
+    ],
+  },
+
+  'calendar-events': {
+    slug: 'calendar-events',
+    arabicName: 'الفعاليات',
+    description: 'تقويم الفعاليات والاجتماعات',
+    listColumns: [
+      { key: 'code', label: 'المعرّف', type: 'badge' },
+      { key: 'title', label: 'العنوان' },
+      { key: 'eventType', label: 'النوع', type: 'badge' },
+      { key: 'status', label: 'الحالة', type: 'status' },
+      { key: 'startDate', label: 'التاريخ', type: 'date' },
+    ],
+    formFields: [
+      { key: 'title', label: 'عنوان الفعالية', required: true, cols: 2 },
+      { key: 'description', label: 'الوصف', type: 'textarea', cols: 2 },
+      { key: 'eventType', label: 'نوع الفعالية', lookupCategory: 'EventType' },
+      { key: 'startDate', label: 'البدء', type: 'date', required: true },
+      { key: 'endDate', label: 'الانتهاء', type: 'date' },
+      { key: 'location', label: 'الموقع' },
+      { key: 'status', label: 'الحالة', lookupCategory: 'EventStatus' },
+      { key: 'attendeeCount', label: 'عدد الحضور', type: 'number' },
+      { key: 'outcomes', label: 'النتائج', type: 'textarea', cols: 2 },
+    ],
+  },
+
+  'strategic-sources': {
+    slug: 'strategic-sources',
+    arabicName: 'المصادر الاستراتيجية',
+    description: 'المصادر التي تُبنى عليها التحديات',
+    listColumns: [
+      { key: 'code', label: 'المعرّف', type: 'badge' },
+      { key: 'sourceName', label: 'المصدر' },
+      { key: 'sourceType', label: 'النوع', type: 'badge' },
+      { key: 'relevance', label: 'الأهمية' },
+    ],
+    formFields: [
+      { key: 'sourceName', label: 'اسم المصدر', required: true, cols: 2 },
+      { key: 'sourceType', label: 'النوع', lookupCategory: 'StrategicSourceType' },
+      { key: 'description', label: 'الوصف', type: 'textarea', cols: 2 },
+      { key: 'url', label: 'الرابط', type: 'url', cols: 2 },
+      { key: 'publicationDate', label: 'تاريخ النشر', type: 'date' },
+      { key: 'relevance', label: 'الأهمية' },
+    ],
+  },
 };
 
 export const ENTITY_SLUGS = Object.keys(ENTITY_CONFIGS);
+
+// ============================================================
+// Validation: per-entity writable/sortable/filterable whitelists
+// + permissive-by-shape Zod schemas (strict() rejects unknown keys,
+// which is the mass-assignment defense).
+// ============================================================
+
+const SAFE_SYSTEM_SORT_FIELDS = ['id', 'code', 'createdAt', 'updatedAt'];
+
+function buildValidation(config: EntityConfig): EntityValidation {
+  const writable = config.formFields.map(f => f.key);
+  const requiredKeys = config.formFields.filter(f => f.required).map(f => f.key);
+
+  // Permissive value-shape: unknown values are accepted (the crud layer will
+  // coerce dates/empty strings). Strict() ensures unknown KEYS are rejected.
+  const shape: Record<string, z.ZodTypeAny> = {};
+  for (const f of config.formFields) shape[f.key] = z.unknown().optional();
+  // 'code' is allowed (server may generate; harmless if client omits or supplies)
+  shape['code'] = z.unknown().optional();
+
+  const baseSchema = z.object(shape).strict();
+  const createSchema = baseSchema.superRefine((data, ctx) => {
+    for (const key of requiredKeys) {
+      const v = (data as Record<string, unknown>)[key];
+      if (v === undefined || v === null || v === '') {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${key} is required` });
+      }
+    }
+  });
+
+  const listKeys = config.listColumns.map(c => c.key);
+  return {
+    writableFields: writable,
+    sortableFields: Array.from(new Set([...SAFE_SYSTEM_SORT_FIELDS, ...listKeys])),
+    filterableFields: Array.from(new Set([...listKeys, 'status', 'category', 'stage'])),
+    createSchema,
+    updateSchema: baseSchema,
+  };
+}
+
+// Entities that are routed through generic CRUD but have no formFields
+// (managed by their own admin pages). Define minimal writable schemas
+// so writes go through validation rather than being open.
+const VALIDATION_OVERRIDES: Record<string, EntityValidation> = {
+  users: {
+    writableFields: ['name', 'image', 'role', 'active'],
+    sortableFields: ['id', 'email', 'name', 'role', 'createdAt', 'lastLoginAt'],
+    filterableFields: ['role', 'active', 'email'],
+    createSchema: z.object({
+      email: z.string().email(),
+      name: z.string().optional(),
+      image: z.string().url().optional(),
+      role: z.enum(['ADMIN', 'EDITOR', 'VIEWER']).optional(),
+      active: z.boolean().optional(),
+    }).strict(),
+    updateSchema: z.object({
+      name: z.string().optional(),
+      image: z.string().url().nullable().optional(),
+      role: z.enum(['ADMIN', 'EDITOR', 'VIEWER']).optional(),
+      active: z.boolean().optional(),
+    }).strict(),
+  },
+  lookups: {
+    writableFields: ['category', 'value', 'displayOrder', 'active', 'metadata'],
+    sortableFields: ['id', 'category', 'value', 'displayOrder'],
+    filterableFields: ['category', 'active'],
+    createSchema: z.object({
+      category: z.string().min(1),
+      value: z.string().min(1),
+      displayOrder: z.coerce.number().int().optional(),
+      active: z.boolean().optional(),
+      metadata: z.unknown().optional(),
+    }).strict(),
+    updateSchema: z.object({
+      category: z.string().min(1).optional(),
+      value: z.string().min(1).optional(),
+      displayOrder: z.coerce.number().int().optional(),
+      active: z.boolean().optional(),
+      metadata: z.unknown().optional(),
+    }).strict(),
+  },
+  // Audit log: read-only at the API layer. Writes are emitted internally by
+  // the CRUD layer. We define an unsatisfiable schema so any POST/PATCH fails.
+  'audit-log': {
+    writableFields: [],
+    sortableFields: ['id', 'createdAt', 'entity', 'action', 'userId'],
+    filterableFields: ['entity', 'action', 'userId'],
+    createSchema: z.never(),
+    updateSchema: z.never(),
+  },
+};
+
+/**
+ * Returns validation rules for an entity slug, or null when none defined.
+ * Callers (crud.ts) treat a null result as "writes denied" and "no field
+ * whitelist available — fall back to safe defaults for reads."
+ */
+export function getEntityValidation(slug: string): EntityValidation | null {
+  if (VALIDATION_OVERRIDES[slug]) return VALIDATION_OVERRIDES[slug];
+  const config = ENTITY_CONFIGS[slug];
+  if (!config) return null;
+  return buildValidation(config);
+}
+

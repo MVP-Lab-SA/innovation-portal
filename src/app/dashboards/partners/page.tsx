@@ -15,7 +15,7 @@ export default function PartnersDashboard() {
   const interactions = data?.recentInteractions || [];
 
   return (
-    <AppShell title="الشركاء والرعايات" subtitle="DASH-07 — إدارة العلاقات والرعايات" showRefresh onRefresh={refresh}>
+    <AppShell title="الشركاء والرعايات" subtitle="DASH-07 — إدارة العلاقات والرعايات" showRefresh onRefresh={refresh} manageEntity="partners">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <KpiCard title="إجمالي الشركاء" value={k.total || 0} icon={Users} variant="default" loading={loading} />
         <KpiCard title="شراكات نشطة" value={k.active || 0} icon={Handshake} variant="success" loading={loading} />

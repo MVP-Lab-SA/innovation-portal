@@ -14,7 +14,7 @@ export default function CommunicationsDashboard() {
   const list = data?.list || [];
 
   return (
-    <AppShell title="التواصل والإعلام" subtitle="DASH-10 — الحملات والظهور الإعلامي" showRefresh onRefresh={refresh}>
+    <AppShell title="التواصل والإعلام" subtitle="DASH-10 — الحملات والظهور الإعلامي" showRefresh onRefresh={refresh} manageEntity="communications">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <KpiCard title="إجمالي الحملات" value={k.total || 0} icon={Megaphone} variant="default" loading={loading} />
         <KpiCard title="إجمالي الوصول" value={k.totalReach || 0} icon={Eye} variant="info" loading={loading} />

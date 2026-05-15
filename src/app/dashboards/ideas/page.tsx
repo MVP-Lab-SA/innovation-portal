@@ -14,7 +14,7 @@ export default function IdeasDashboard() {
   const recent = data?.recent || [];
 
   return (
-    <AppShell title="قمع الأفكار" subtitle="DASH-02 — تتبع الأفكار من التقديم للتنفيذ" showRefresh onRefresh={refresh}>
+    <AppShell title="قمع الأفكار" subtitle="DASH-02 — تتبع الأفكار من التقديم للتنفيذ" showRefresh onRefresh={refresh} manageEntity="ideas">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <KpiCard title="إجمالي الأفكار" value={k.total || 0} icon={Lightbulb} variant="warning" loading={loading} />
         <KpiCard title="أفكار جديدة" value={k.new || 0} icon={Lightbulb} variant="info" loading={loading} />

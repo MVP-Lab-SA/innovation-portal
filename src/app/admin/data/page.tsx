@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
 import { DataTable } from '@/components/DataTable';
 import { EntityForm } from '@/components/forms/EntityForm';
@@ -9,14 +10,21 @@ import { ENTITY_CONFIGS } from '@/lib/entityConfigs';
 import { Database, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function AdminDataPage() {
-  const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
+function AdminDataInner() {
+  const searchParams = useSearchParams();
+  const initialEntity = searchParams.get('entity');
+  const [selectedEntity, setSelectedEntity] = useState<string | null>(
+    initialEntity && ENTITY_CONFIGS[initialEntity] ? initialEntity : null,
+  );
+  useEffect(() => {
+    if (initialEntity && ENTITY_CONFIGS[initialEntity]) setSelectedEntity(initialEntity);
+  }, [initialEntity]);
   const [showForm, setShowForm] = useState(false);
   const [editingRow, setEditingRow] = useState<any>(null);
-  
+
   const config = selectedEntity ? ENTITY_CONFIGS[selectedEntity] : null;
-  const { data, loading, refresh, pagination } = useEntities<any>(selectedEntity || '', { pageSize: 50 });
-  
+  const { data, refresh, pagination } = useEntities<any>(selectedEntity || '', { pageSize: 50 });
+
   const handleDelete = async (row: any) => {
     if (!confirm(`هل أنت متأكد من حذف ${row.code || row.id}؟`)) return;
     try {
@@ -28,7 +36,7 @@ export default function AdminDataPage() {
       toast.error(e.message);
     }
   };
-  
+
   if (!selectedEntity) {
     return (
       <AppShell title="إدارة البيانات" subtitle="اختر جدولاً لإدارته">
@@ -55,7 +63,7 @@ export default function AdminDataPage() {
       </AppShell>
     );
   }
-  
+
   return (
     <AppShell
       title={`إدارة: ${config!.arabicName}`}
@@ -77,7 +85,7 @@ export default function AdminDataPage() {
         onDelete={handleDelete}
         emptyMessage={`لا توجد سجلات في ${config!.arabicName}. اضغط "إضافة" لإنشاء سجل جديد.`}
       />
-      
+
       {showForm && (
         <EntityForm
           title={editingRow ? `تعديل: ${editingRow.code || editingRow.id}` : `إضافة ${config!.arabicName}`}
@@ -90,5 +98,13 @@ export default function AdminDataPage() {
         />
       )}
     </AppShell>
+  );
+}
+
+export default function AdminDataPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminDataInner />
+    </Suspense>
   );
 }

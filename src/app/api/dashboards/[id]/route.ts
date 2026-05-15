@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionWithProfile } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { respondError } from '@/lib/apiError';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 /**
  * Returns aggregated data for each dashboard
  */
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSessionWithProfile();
-  if (!session?.profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  
+  if (!session?.profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
   const dashboardId = params.id;
-  
+
   try {
     switch (dashboardId) {
       case 'executive':
@@ -34,11 +38,10 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
       case 'communications':
         return NextResponse.json(await getCommunicationsDashboard());
       default:
-        return NextResponse.json({ error: 'Unknown dashboard' }, { status: 404 });
+        return NextResponse.json({ error: 'unknown_dashboard' }, { status: 404 });
     }
-  } catch (error: any) {
-    console.error(`Dashboard error:`, error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err) {
+    return respondError(err, { code: 'dashboard_failed' });
   }
 }
 

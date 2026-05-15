@@ -1,212 +1,256 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionWithProfile, canEdit, canAdmin } from './auth';
+import { getSessionWithProfile, canAccess } from './auth';
 import { prisma } from './prisma';
-import type { Prisma } from '@prisma/client';
-
-type ModelName = Prisma.ModelName;
+import { getEntityValidation } from './entityConfigs';
+import { respondError } from './apiError';
 
 interface CrudOptions {
   searchFields?: string[];
   defaultOrderBy?: Record<string, 'asc' | 'desc'>;
-  include?: Record<string, any>;
+  include?: Record<string, unknown>;
   codePrefix?: string;
 }
 
-async function generateNextCode(model: any, prefix: string): Promise<string> {
+interface EntityRegistryEntry {
+  model: string; // prisma model key (camelCase)
+  options: CrudOptions;
+  arabicName: string;
+}
+
+type PrismaModel = {
+  findFirst: (args: unknown) => Promise<{ code: string | null } | null>;
+  findMany: (args: unknown) => Promise<unknown[]>;
+  findUnique: (args: unknown) => Promise<unknown | null>;
+  count: (args: unknown) => Promise<number>;
+  create: (args: unknown) => Promise<{ id: string } & Record<string, unknown>>;
+  update: (args: unknown) => Promise<unknown>;
+  delete: (args: unknown) => Promise<unknown>;
+};
+
+function getModel(modelName: string): PrismaModel {
+  // Single typed cast at the boundary — Prisma's client doesn't expose a
+  // generic dynamic-model accessor, so this is intentional.
+  const client = prisma as unknown as Record<string, PrismaModel>;
+  return client[modelName];
+}
+
+async function generateNextCode(model: PrismaModel, prefix: string): Promise<string> {
   const last = await model.findFirst({
     where: { code: { startsWith: `${prefix}-` } },
     orderBy: { code: 'desc' },
     select: { code: true },
   });
-  if (!last) return `${prefix}-001`;
+  if (!last?.code) return `${prefix}-001`;
   const num = parseInt(last.code.split('-')[1] || '0', 10) + 1;
   return `${prefix}-${String(num).padStart(3, '0')}`;
 }
 
-export function createListHandler(modelName: keyof typeof prisma, options: CrudOptions = {}) {
+function coerceBody(body: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(body)) {
+    let value: unknown = v;
+    if (value === '') value = null;
+    if (typeof value === 'string' && k.toLowerCase().includes('date') && value) {
+      value = new Date(value);
+    }
+    out[k] = value;
+  }
+  return out;
+}
+
+async function writeAuditLog(
+  userId: string,
+  action: 'CREATE' | 'UPDATE' | 'DELETE',
+  entity: string,
+  entityId: string,
+  changes: unknown,
+  ipAddress: string | null,
+) {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        action,
+        entity,
+        entityId,
+        changes: changes === null || changes === undefined ? undefined : (changes as object),
+        ipAddress: ipAddress ?? undefined,
+      },
+    });
+  } catch (err) {
+    console.error('audit_log_failed', { entity, action, entityId, err });
+  }
+}
+
+function ipFromRequest(req: NextRequest): string | null {
+  const fwd = req.headers.get('x-forwarded-for');
+  if (fwd) return fwd.split(',')[0]!.trim();
+  return req.headers.get('x-real-ip');
+}
+
+export function createListHandler(slug: string, modelName: string, options: CrudOptions = {}) {
   return async function GET(request: NextRequest) {
     const session = await getSessionWithProfile();
-    if (!session?.profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    
+    if (!session?.profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    if (!canAccess(session.profile.role, slug, 'read')) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
+
+    const validation = getEntityValidation(slug);
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '50', 10), 200);
+    const page = Math.max(parseInt(searchParams.get('page') || '1', 10), 1);
+    const pageSize = Math.min(Math.max(parseInt(searchParams.get('pageSize') || '50', 10), 1), 200);
     const search = searchParams.get('search') || '';
     const sortBy = searchParams.get('sortBy');
-    const sortDir = (searchParams.get('sortDir') || 'desc') as 'asc' | 'desc';
-    
-    const where: any = {};
-    if (search && options.searchFields) {
+    const sortDir = (searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc') as 'asc' | 'desc';
+
+    const where: Record<string, unknown> = {};
+    if (search && options.searchFields?.length) {
       where.OR = options.searchFields.map(field => ({
         [field]: { contains: search, mode: 'insensitive' },
       }));
     }
-    
+
     searchParams.forEach((value, key) => {
-      if (key.startsWith('filter_')) {
-        const field = key.replace('filter_', '');
-        where[field] = value;
-      }
+      if (!key.startsWith('filter_')) return;
+      const field = key.slice('filter_'.length);
+      if (validation && !validation.filterableFields.includes(field)) return; // silently drop unsafe filter
+      where[field] = value;
     });
-    
+
+    let orderBy: Record<string, 'asc' | 'desc'> | undefined = options.defaultOrderBy || { createdAt: 'desc' };
+    if (sortBy) {
+      if (!validation || validation.sortableFields.includes(sortBy)) {
+        orderBy = { [sortBy]: sortDir };
+      } else {
+        return NextResponse.json({ error: 'invalid_sort_field', field: sortBy }, { status: 400 });
+      }
+    }
+
     try {
-      const model = (prisma as any)[modelName];
+      const model = getModel(modelName);
       const [data, total] = await Promise.all([
         model.findMany({
           where,
           skip: (page - 1) * pageSize,
           take: pageSize,
-          orderBy: sortBy ? { [sortBy]: sortDir } : (options.defaultOrderBy || { createdAt: 'desc' }),
+          orderBy,
           include: options.include,
         }),
         model.count({ where }),
       ]);
-      
       return NextResponse.json({
         data,
         pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
       });
-    } catch (error: any) {
-      console.error(`Error listing ${String(modelName)}:`, error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (err) {
+      return respondError(err, { code: 'list_failed' });
     }
   };
 }
 
-export function createCreateHandler(modelName: keyof typeof prisma, options: CrudOptions = {}) {
+export function createCreateHandler(slug: string, modelName: string, options: CrudOptions = {}) {
   return async function POST(request: NextRequest) {
     const session = await getSessionWithProfile();
-    if (!session?.profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!canEdit(session.profile.role)) {
-      return NextResponse.json({ error: 'Forbidden - editor role required' }, { status: 403 });
+    if (!session?.profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    if (!canAccess(session.profile.role, slug, 'create')) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
-    
+
+    const validation = getEntityValidation(slug);
+    if (!validation) {
+      return NextResponse.json({ error: 'entity_not_writable' }, { status: 403 });
+    }
+
     try {
-      const body = await request.json();
-      const model = (prisma as any)[modelName];
-      
-      if (options.codePrefix && !body.code) {
-        body.code = await generateNextCode(model, options.codePrefix);
+      const rawBody = await request.json();
+      // Strip system/protected fields BEFORE schema parse so a request can't
+      // even attempt to set them.
+      const sanitized = { ...rawBody };
+      for (const k of ['id', 'createdAt', 'updatedAt', 'neonAuthId']) delete sanitized[k];
+      const parsed = validation.createSchema.parse(sanitized);
+      const data = coerceBody(parsed as Record<string, unknown>);
+
+      const model = getModel(modelName);
+      if (options.codePrefix && !data.code) {
+        data.code = await generateNextCode(model, options.codePrefix);
       }
-      
-      Object.keys(body).forEach(key => {
-        if (body[key] === '') body[key] = null;
-        if (key.toLowerCase().includes('date') && typeof body[key] === 'string' && body[key]) {
-          body[key] = new Date(body[key]);
-        }
-      });
-      
-      const created = await model.create({ data: body, include: options.include });
-      
-      await prisma.auditLog.create({
-        data: {
-          userId: session.profile.id,
-          action: 'CREATE',
-          entity: String(modelName),
-          entityId: created.id,
-          changes: body,
-        },
-      }).catch(() => {});
-      
+
+      const created = await model.create({ data, include: options.include });
+      await writeAuditLog(session.profile.id, 'CREATE', slug, created.id, data, ipFromRequest(request));
       return NextResponse.json(created, { status: 201 });
-    } catch (error: any) {
-      console.error(`Error creating ${String(modelName)}:`, error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (err) {
+      return respondError(err, { code: 'create_failed' });
     }
   };
 }
 
-export function createRecordHandlers(modelName: keyof typeof prisma, options: CrudOptions = {}) {
+export function createRecordHandlers(slug: string, modelName: string, options: CrudOptions = {}) {
   return {
-    async GET(_request: NextRequest, { params }: { params: { id: string } }) {
+    async GET(request: NextRequest, { params }: { params: { id: string } }) {
       const session = await getSessionWithProfile();
-      if (!session?.profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      
+      if (!session?.profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+      if (!canAccess(session.profile.role, slug, 'read')) {
+        return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+      }
       try {
-        const model = (prisma as any)[modelName];
-        const record = await model.findUnique({
-          where: { id: params.id },
-          include: options.include,
-        });
-        if (!record) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        const model = getModel(modelName);
+        const record = await model.findUnique({ where: { id: params.id }, include: options.include });
+        if (!record) return NextResponse.json({ error: 'not_found' }, { status: 404 });
         return NextResponse.json(record);
-      } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+      } catch (err) {
+        return respondError(err, { code: 'read_failed' });
       }
     },
-    
+
     async PATCH(request: NextRequest, { params }: { params: { id: string } }) {
       const session = await getSessionWithProfile();
-      if (!session?.profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      if (!canEdit(session.profile.role)) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      if (!session?.profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+      if (!canAccess(session.profile.role, slug, 'update')) {
+        return NextResponse.json({ error: 'forbidden' }, { status: 403 });
       }
-      
+      const validation = getEntityValidation(slug);
+      if (!validation) return NextResponse.json({ error: 'entity_not_writable' }, { status: 403 });
+
       try {
-        const body = await request.json();
-        const model = (prisma as any)[modelName];
-        
-        Object.keys(body).forEach(key => {
-          if (body[key] === '') body[key] = null;
-          if (key.toLowerCase().includes('date') && typeof body[key] === 'string' && body[key]) {
-            body[key] = new Date(body[key]);
-          }
-        });
-        
-        delete body.id;
-        delete body.code;
-        
+        const rawBody = await request.json();
+        const sanitized = { ...rawBody };
+        for (const k of ['id', 'code', 'createdAt', 'updatedAt', 'neonAuthId']) delete sanitized[k];
+        const parsed = validation.updateSchema.parse(sanitized);
+        const data = coerceBody(parsed as Record<string, unknown>);
+
+        const model = getModel(modelName);
         const updated = await model.update({
           where: { id: params.id },
-          data: body,
+          data,
           include: options.include,
         });
-        
-        await prisma.auditLog.create({
-          data: {
-            userId: session.profile.id,
-            action: 'UPDATE',
-            entity: String(modelName),
-            entityId: params.id,
-            changes: body,
-          },
-        }).catch(() => {});
-        
+        await writeAuditLog(session.profile.id, 'UPDATE', slug, params.id, data, ipFromRequest(request));
         return NextResponse.json(updated);
-      } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+      } catch (err) {
+        return respondError(err, { code: 'update_failed' });
       }
     },
-    
-    async DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
+
+    async DELETE(request: NextRequest, { params }: { params: { id: string } }) {
       const session = await getSessionWithProfile();
-      if (!session?.profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      if (!canAdmin(session.profile.role)) {
-        return NextResponse.json({ error: 'Forbidden - admin only' }, { status: 403 });
+      if (!session?.profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+      if (!canAccess(session.profile.role, slug, 'delete')) {
+        return NextResponse.json({ error: 'forbidden' }, { status: 403 });
       }
-      
       try {
-        const model = (prisma as any)[modelName];
+        const model = getModel(modelName);
         await model.delete({ where: { id: params.id } });
-        
-        await prisma.auditLog.create({
-          data: {
-            userId: session.profile.id,
-            action: 'DELETE',
-            entity: String(modelName),
-            entityId: params.id,
-          },
-        }).catch(() => {});
-        
+        await writeAuditLog(session.profile.id, 'DELETE', slug, params.id, null, ipFromRequest(request));
         return NextResponse.json({ success: true });
-      } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+      } catch (err) {
+        return respondError(err, { code: 'delete_failed' });
       }
     },
   };
 }
 
-export const MODEL_REGISTRY: Record<string, { model: keyof typeof prisma; options: CrudOptions; arabicName: string }> = {
+export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
   'employees': { model: 'employee', options: { codePrefix: 'EMP', searchFields: ['code', 'fullName', 'email', 'department'] }, arabicName: 'الموظفون' },
   'initiatives': { model: 'initiative', options: { codePrefix: 'INI', searchFields: ['code', 'name', 'description'] }, arabicName: 'المبادرات' },
   'milestones': { model: 'milestone', options: { codePrefix: 'MIL', searchFields: ['code', 'name'] }, arabicName: 'المراحل الرئيسية' },
@@ -230,4 +274,12 @@ export const MODEL_REGISTRY: Record<string, { model: keyof typeof prisma; option
   'communications': { model: 'communication', options: { codePrefix: 'COM', searchFields: ['code', 'title'] }, arabicName: 'التواصل والإعلام' },
   'lookups': { model: 'lookup', options: { searchFields: ['category', 'value'] }, arabicName: 'القوائم المرجعية' },
   'users': { model: 'user', options: { searchFields: ['email', 'name'] }, arabicName: 'المستخدمون' },
+  'audit-log': {
+    model: 'auditLog',
+    options: {
+      defaultOrderBy: { createdAt: 'desc' },
+      include: { user: { select: { email: true, name: true } } },
+    },
+    arabicName: 'سجل التغييرات',
+  },
 };

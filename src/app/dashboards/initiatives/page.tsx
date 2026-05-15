@@ -14,7 +14,7 @@ export default function InitiativesDashboard() {
   const list = data?.list || [];
 
   return (
-    <AppShell title="محفظة المبادرات" subtitle="DASH-06 — متابعة المبادرات النشطة" showRefresh onRefresh={refresh}>
+    <AppShell title="محفظة المبادرات" subtitle="DASH-06 — متابعة المبادرات النشطة" showRefresh onRefresh={refresh} manageEntity="initiatives">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <KpiCard title="إجمالي المبادرات" value={k.total || 0} icon={Briefcase} variant="default" loading={loading} />
         <KpiCard title="قيد التنفيذ" value={k.active || 0} icon={Play} variant="info" loading={loading} />

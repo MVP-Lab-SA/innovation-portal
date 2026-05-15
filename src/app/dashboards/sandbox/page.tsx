@@ -14,7 +14,7 @@ export default function SandboxDashboard() {
   const apps = data?.applications || [];
 
   return (
-    <AppShell title="لوحة طلبات البيئة التجريبية" subtitle="DASH-04 — متابعة طلبات الساندبوكس" showRefresh onRefresh={refresh}>
+    <AppShell title="لوحة طلبات البيئة التجريبية" subtitle="DASH-04 — متابعة طلبات الساندبوكس" showRefresh onRefresh={refresh} manageEntity="sandbox-applications">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <KpiCard title="إجمالي الطلبات" value={k.total || 0} icon={TestTube} variant="default" loading={loading} />
         <KpiCard title="نسبة الاستجابة" value={k.responseRate || 0} suffix="%" icon={TrendingUp} variant="success" loading={loading} />
