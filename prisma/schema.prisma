@@ -1,0 +1,894 @@
+// Prisma Schema for Innovation Center
+// 32 tables + relations + audit log + RBAC
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters", "fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// AUTHENTICATION & AUTHORIZATION
+// ============================================================
+
+enum UserRole {
+  ADMIN       // كامل الصلاحيات
+  EDITOR      // إضافة وتعديل
+  VIEWER      // عرض فقط
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  role          UserRole  @default(VIEWER)
+  active        Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  accounts      Account[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  
+  @@index([email])
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+// Audit log for tracking changes
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String   // CREATE | UPDATE | DELETE
+  entity    String   // table name
+  entityId  String?
+  changes   Json?    // before/after
+  ipAddress String?
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+}
+
+// ============================================================
+// LOOKUPS (Reference data)
+// ============================================================
+
+model Lookup {
+  id          String  @id @default(cuid())
+  category    String  // e.g., "Departments", "RiskLevel", "PartnerType"
+  value       String  // e.g., "بلاتيني"
+  displayOrder Int    @default(0)
+  active      Boolean @default(true)
+  metadata    Json?   // optional extra data
+  
+  @@unique([category, value])
+  @@index([category])
+}
+
+// ============================================================
+// CORE ENTITIES — OPERATIONS
+// ============================================================
+
+// 02 — Employees
+model Employee {
+  id              String    @id @default(cuid())
+  code            String    @unique // EMP-001
+  fullName        String    // الاسم الكامل
+  jobTitle        String?   // المسمى الوظيفي
+  department      String?   // الإدارة
+  email           String?
+  phone           String?
+  hireDate        DateTime? // تاريخ التعيين
+  status          String?   @default("نشط") // الحالة
+  managerId       String?   // المدير المباشر
+  manager         Employee? @relation("Manager", fields: [managerId], references: [id])
+  reports         Employee[] @relation("Manager")
+  
+  // Relations
+  ownedInitiatives Initiative[] @relation("InitiativeOwner")
+  assignedTasks    Task[]        @relation("TaskAssignee")
+  evaluationsLed   Evaluation[]  @relation("EvaluationLead")
+  
+  notes           String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([department])
+  @@index([status])
+}
+
+// 03 — Initiatives
+model Initiative {
+  id                  String       @id @default(cuid())
+  code                String       @unique // INI-001
+  name                String       // اسم المبادرة
+  description         String?      @db.Text
+  category            String?      // فئة المبادرة
+  status              String?      @default("مقترحة")
+  priority            String?      // الأولوية
+  startDate           DateTime?
+  endDate             DateTime?
+  budgetSar           Decimal?     @db.Decimal(15, 2)
+  actualSpendSar      Decimal?     @db.Decimal(15, 2)
+  progress            Int?         @default(0) // 0-100
+  ownerId             String?
+  owner               Employee?    @relation("InitiativeOwner", fields: [ownerId], references: [id])
+  
+  // Source links (1-to-Many)
+  sourceIdeaId        String?
+  sourceIdea          Idea?        @relation("IdeaInitiatives", fields: [sourceIdeaId], references: [id])
+  sourceChallengeId   String?
+  sourceChallenge     Challenge?   @relation("ChallengeInitiatives", fields: [sourceChallengeId], references: [id])
+  sourcePilotId       String?
+  sourcePilot         Pilot?       @relation("PilotInitiatives", fields: [sourcePilotId], references: [id])
+  
+  // Reverse relations
+  milestones          Milestone[]
+  tasks               Task[]
+  partners            InitiativePartner[]
+  documentLinks       DocumentLink[]
+  riskLinks           RiskLink[]
+  metricLinks         MetricLink[]
+  communicationLinks  CommunicationLink[]
+  
+  notes               String?      @db.Text
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  
+  @@index([status])
+  @@index([category])
+  @@index([ownerId])
+}
+
+// 04 — Milestones
+model Milestone {
+  id              String      @id @default(cuid())
+  code            String      @unique // MIL-001
+  initiativeId    String
+  initiative      Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?     @db.Text
+  dueDate         DateTime?
+  completedDate   DateTime?
+  status          String?     @default("مقررة")
+  progress        Int?        @default(0)
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([initiativeId])
+  @@index([status])
+}
+
+// 05 — Tasks
+model Task {
+  id              String      @id @default(cuid())
+  code            String      @unique // TSK-001
+  initiativeId    String?
+  initiative      Initiative? @relation(fields: [initiativeId], references: [id])
+  title           String
+  description     String?     @db.Text
+  assigneeId      String?
+  assignee        Employee?   @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  dueDate         DateTime?
+  priority        String?     @default("متوسطة")
+  status          String?     @default("جديدة")
+  completedAt     DateTime?
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([assigneeId])
+  @@index([status])
+}
+
+// ============================================================
+// EXPERTS NETWORK
+// ============================================================
+
+// 06 — Experts
+model Expert {
+  id              String       @id @default(cuid())
+  code            String       @unique // SME-001
+  fullName        String
+  category        String?      // فئة الخبير
+  specialization  String?      // التخصص
+  email           String?
+  phone           String?
+  organization    String?
+  jobTitle        String?
+  country         String?
+  city            String?
+  cvUrl           String?
+  linkedInUrl     String?
+  bio             String?      @db.Text
+  status          String?      @default("نشط")
+  
+  // Relations through bridge tables
+  ideaAssignments       IdeaExpertAssignment[]
+  challengeAssignments  ExpertChallengeAssignment[]
+  eventParticipations   ExpertEventParticipation[]
+  initiativeContributions ExpertInitiativeContribution[]
+  evaluations           Evaluation[]
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  @@index([category])
+  @@index([status])
+}
+
+// ============================================================
+// IDEAS & EVALUATION
+// ============================================================
+
+// 07 — Ideas
+model Idea {
+  id                  String       @id @default(cuid())
+  code                String       @unique // IDE-001
+  title               String       // اسم الفكرة
+  description         String?      @db.Text
+  submitterCemId      String?
+  submitterCem        Cem?         @relation(fields: [submitterCemId], references: [id])
+  category            String?      // القطاع
+  status              String?      @default("جديدة")
+  stage               String?      // مرحلة الفكرة
+  submissionDate      DateTime?    @default(now())
+  reviewer            String?      // المراجع
+  finalDecision       String?      // القرار النهائي
+  decisionDate        DateTime?
+  impactExpected      String?      // الأثر المتوقع
+  relatedChallengeId  String?
+  relatedChallenge    Challenge?   @relation(fields: [relatedChallengeId], references: [id])
+  
+  // Relations
+  expertAssignments   IdeaExpertAssignment[]
+  evaluations         Evaluation[]
+  initiatives         Initiative[] @relation("IdeaInitiatives")
+  documentLinks       DocumentLink[]
+  
+  notes               String?      @db.Text
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  
+  @@index([status])
+  @@index([stage])
+  @@index([category])
+}
+
+// 07a — Pilots
+model Pilot {
+  id              String       @id @default(cuid())
+  code            String       @unique // PIL-001
+  name            String
+  description     String?      @db.Text
+  status          String?      @default("مخطط لها")
+  startDate       DateTime?
+  endDate         DateTime?
+  budgetSar       Decimal?     @db.Decimal(15, 2)
+  successCriteria String?      @db.Text
+  outcome         String?      @db.Text
+  
+  // Relations
+  initiatives     Initiative[] @relation("PilotInitiatives")
+  documentLinks   DocumentLink[]
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  @@index([status])
+}
+
+// 07b — Sandbox Applications (lookup-rich)
+model SandboxApplication {
+  id                      String       @id @default(cuid())
+  code                    String       @unique // SBX-001
+  
+  // Submitting entity
+  entityName              String       // اسم الجهة
+  entityType              String?      // نوع الجهة
+  contactEmail            String?
+  contactPhone            String?
+  responsibleName         String?
+  jobTitle                String?
+  
+  // Solution details
+  solutionName            String       // اسم الحل/المشروع
+  solutionDescription     String?      @db.Text
+  problemStatement        String?      @db.Text
+  solutionDomain          String?      // مجال الحل
+  productMaturity         String?      // مرحلة جاهزية المنتج (TRL)
+  vision2030Alignment     String?      // التوافق مع رؤية 2030
+  scalingStrategy         String?      // استراتيجية التوسع
+  
+  // Application metadata
+  applicationStatus       String?      @default("قيد المراجعة الأولية")
+  applicationCategory     String?      // متكررة / جديدة
+  submissionDate          DateTime?    @default(now())
+  lastUpdateDate          DateTime?    @updatedAt
+  reviewer                String?
+  
+  // Outcomes
+  trialResult             String?      @db.Text
+  postTrialLicensesNeeded String?      @db.Text
+  websites                String?
+  
+  // Risks & metrics (text fields)
+  identifiedRisks         String?      @db.Text
+  expectedOutcomes        String?      @db.Text
+  
+  // Linked entities
+  linkedChallenge         String?
+  linkedIdeaId            String?
+  registeredPartnerId     String?
+  
+  notes                   String?      @db.Text
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+  
+  @@index([applicationStatus])
+  @@index([solutionDomain])
+  @@index([entityType])
+}
+
+// 08 — Evaluations
+model Evaluation {
+  id              String   @id @default(cuid())
+  code            String   @unique // EVL-001
+  ideaId          String?
+  idea            Idea?    @relation(fields: [ideaId], references: [id])
+  expertId        String?
+  expert          Expert?  @relation(fields: [expertId], references: [id])
+  leadEmployeeId  String?
+  leadEmployee    Employee? @relation("EvaluationLead", fields: [leadEmployeeId], references: [id])
+  
+  evaluationDate  DateTime? @default(now())
+  overallScore    Decimal?  @db.Decimal(5, 2)
+  status          String?   @default("جارية")
+  recommendation  String?   @db.Text
+  comments        String?   @db.Text
+  
+  scores          EvalScore[]
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([ideaId])
+  @@index([expertId])
+}
+
+// 09 — Evaluation Rubric (criteria definitions)
+model EvalRubric {
+  id              String   @id @default(cuid())
+  code            String   @unique // RUB-001
+  criterionName   String   // اسم المعيار
+  criterionDesc   String?  @db.Text
+  weight          Decimal  @db.Decimal(5, 2) // وزن المعيار
+  scoreScale      String?  // مقياس الدرجات
+  evaluationStage String?  // مرحلة التقييم
+  reverseScoring  Boolean  @default(false)
+  active          Boolean  @default(true)
+  
+  scores          EvalScore[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// 10 — Eval Scores (per criterion per evaluation)
+model EvalScore {
+  id              String     @id @default(cuid())
+  evaluationId    String
+  evaluation      Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  rubricId        String
+  rubric          EvalRubric @relation(fields: [rubricId], references: [id])
+  rawScore        Decimal    @db.Decimal(5, 2)
+  weightedScore   Decimal?   @db.Decimal(5, 2)
+  justification   String?    @db.Text
+  
+  createdAt       DateTime   @default(now())
+  
+  @@unique([evaluationId, rubricId])
+  @@index([evaluationId])
+}
+
+// ============================================================
+// CHALLENGES & EVENTS
+// ============================================================
+
+// 11 — Calendar Events
+model CalendarEvent {
+  id              String       @id @default(cuid())
+  code            String       @unique // EVT-001
+  title           String
+  description     String?      @db.Text
+  eventType       String?      // نوع الفعالية
+  startDate       DateTime
+  endDate         DateTime?
+  location        String?
+  status          String?      @default("مخطط لها")
+  attendeeCount   Int?
+  outcomes        String?      @db.Text
+  
+  // Relations
+  expertParticipations ExpertEventParticipation[]
+  employeeParticipations EventEmployeeParticipation[]
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  @@index([eventType])
+  @@index([startDate])
+}
+
+// 11a — Strategic Sources
+model StrategicSource {
+  id              String     @id @default(cuid())
+  code            String     @unique // STR-001
+  sourceName      String     // اسم المصدر
+  sourceType      String?    // نوع المصدر
+  description     String?    @db.Text
+  url             String?
+  publicationDate DateTime?
+  relevance       String?    // الأهمية
+  
+  challenges      Challenge[]
+  
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+// 12 — Challenges
+model Challenge {
+  id                  String          @id @default(cuid())
+  code                String          @unique // CHL-001
+  title               String          // عنوان التحدي
+  description         String?         @db.Text
+  category            String?         // فئة التحدي
+  status              String?         @default("مخطط له")
+  launchDate          DateTime?
+  closingDate         DateTime?
+  prizeAmount         Decimal?        @db.Decimal(15, 2)
+  expectedOutcome     String?         @db.Text
+  actualOutcome       String?         @db.Text
+  submissionCount     Int?            @default(0)
+  winnerCount         Int?            @default(0)
+  
+  strategicSourceId   String?
+  strategicSource     StrategicSource? @relation(fields: [strategicSourceId], references: [id])
+  
+  // Relations
+  ideas               Idea[]
+  expertAssignments   ExpertChallengeAssignment[]
+  initiatives         Initiative[]    @relation("ChallengeInitiatives")
+  
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  
+  @@index([status])
+  @@index([category])
+}
+
+// 13 — CEM (Innovators/Individuals)
+model Cem {
+  id              String   @id @default(cuid())
+  code            String   @unique // INV-001
+  fullName        String   // الاسم الكامل
+  nationalId      String?  // الهوية الوطنية (PII)
+  email           String?
+  phone           String?
+  city            String?
+  educationLevel  String?
+  jobTitle        String?
+  organization    String?
+  innovationField String?
+  status          String?  @default("نشط")
+  
+  ideas           Idea[]
+  
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([status])
+}
+
+// ============================================================
+// PARTNERS & SPONSORSHIPS
+// ============================================================
+
+// 13a — Partners
+model Partner {
+  id                     String                @id @default(cuid())
+  code                   String                @unique // PRT-001
+  partnerName            String                // اسم الشريك
+  partnerType            String?               // نوع الشريك
+  partnerCategory        String?               // فئة الشريك
+  partnershipStatus      String?               @default("نشطة")
+  commercialRegistration String?               // السجل التجاري (PII)
+  contactName            String?
+  contactEmail           String?
+  contactPhone           String?
+  country                String?
+  city                   String?
+  website                String?
+  agreementStartDate     DateTime?
+  agreementEndDate       DateTime?
+  
+  // Relations
+  sponsorships           Sponsorship[]
+  interactions           PartnerInteraction[]
+  initiativePartners     InitiativePartner[]
+  
+  notes                  String?               @db.Text
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  
+  @@index([partnershipStatus])
+  @@index([partnerType])
+}
+
+// 13b — Sponsorships
+model Sponsorship {
+  id                  String   @id @default(cuid())
+  code                String   @unique // SPN-001
+  partnerId           String
+  partner             Partner  @relation(fields: [partnerId], references: [id])
+  sponsorshipType     String?  // نوع الرعاية
+  sponsorshipTier     String?  // مستوى الرعاية (بلاتيني/ذهبي/...)
+  cashValueSar        Decimal? @db.Decimal(15, 2)
+  inKindValueSar      Decimal? @db.Decimal(15, 2)
+  servicesValueSar    Decimal? @db.Decimal(15, 2)
+  // Auto-calculated via API
+  totalValueSar       Decimal? @db.Decimal(15, 2)
+  startDate           DateTime?
+  endDate             DateTime?
+  status              String?  @default("نشطة")
+  notes               String?  @db.Text
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  @@index([partnerId])
+  @@index([status])
+}
+
+// 13c — Partner Interactions
+model PartnerInteraction {
+  id              String   @id @default(cuid())
+  code            String   @unique // INT-001
+  partnerId       String
+  partner         Partner  @relation(fields: [partnerId], references: [id])
+  interactionType String?  // نوع التفاعل
+  interactionDate DateTime @default(now())
+  subject         String?
+  summary         String?  @db.Text
+  outcome         String?  @db.Text
+  followUpDate    DateTime?
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([partnerId])
+  @@index([interactionDate])
+}
+
+// 13d — Initiative Partners (junction)
+model InitiativePartner {
+  id              String     @id @default(cuid())
+  initiativeId    String
+  initiative      Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  partnerId       String
+  partner         Partner    @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  role            String?    // دور الشريك
+  contribution    String?    @db.Text
+  startDate       DateTime?
+  endDate         DateTime?
+  
+  createdAt       DateTime   @default(now())
+  
+  @@unique([initiativeId, partnerId])
+  @@index([initiativeId])
+  @@index([partnerId])
+}
+
+// ============================================================
+// EXPERT JUNCTION TABLES
+// ============================================================
+
+// 14 — Idea-Expert Assignments
+model IdeaExpertAssignment {
+  id              String   @id @default(cuid())
+  ideaId          String
+  idea            Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  expertId        String
+  expert          Expert   @relation(fields: [expertId], references: [id])
+  assignmentRole  String?  // دور الخبير
+  assignedDate    DateTime @default(now())
+  status          String?  @default("نشطة")
+  feedback        String?  @db.Text
+  
+  @@unique([ideaId, expertId])
+  @@index([ideaId])
+  @@index([expertId])
+}
+
+// 15 — Expert-Challenge Assignments
+model ExpertChallengeAssignment {
+  id              String     @id @default(cuid())
+  expertId        String
+  expert          Expert     @relation(fields: [expertId], references: [id])
+  challengeId     String
+  challenge       Challenge  @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  role            String?    // دور الخبير
+  assignedDate    DateTime   @default(now())
+  
+  @@unique([expertId, challengeId])
+  @@index([challengeId])
+}
+
+// 16 — Expert-Event Participation
+model ExpertEventParticipation {
+  id              String        @id @default(cuid())
+  expertId        String
+  expert          Expert        @relation(fields: [expertId], references: [id])
+  eventId         String
+  event           CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participationType String?     // نوع المشاركة
+  
+  @@unique([expertId, eventId])
+  @@index([eventId])
+}
+
+// 17 — Expert-Initiative Contribution
+model ExpertInitiativeContribution {
+  id              String   @id @default(cuid())
+  expertId        String
+  expert          Expert   @relation(fields: [expertId], references: [id])
+  initiativeId    String
+  contributionType String?
+  startDate       DateTime?
+  endDate         DateTime?
+  
+  @@unique([expertId, initiativeId])
+}
+
+// 18 — Event-Employee Participation
+model EventEmployeeParticipation {
+  id              String        @id @default(cuid())
+  eventId         String
+  event           CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  employeeId      String
+  role            String?
+  
+  @@unique([eventId, employeeId])
+}
+
+// ============================================================
+// CENTRAL MANAGEMENT (v10 additions)
+// ============================================================
+
+// 21 — Documents
+model Document {
+  id              String   @id @default(cuid())
+  code            String   @unique // DOC-001
+  title           String   // عنوان الوثيقة
+  documentType    String?  // نوع الوثيقة
+  description     String?  @db.Text
+  fileUrl         String?
+  version         String?  @default("1.0")
+  uploadedBy      String?
+  uploadDate      DateTime @default(now())
+  status          String?  @default("نشطة")
+  
+  documentLinks   DocumentLink[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([documentType])
+}
+
+// 22 — Risks Register
+model Risk {
+  id              String   @id @default(cuid())
+  code            String   @unique // RSK-001
+  title           String   // وصف المخاطرة
+  description     String?  @db.Text
+  category        String?  // فئة المخاطرة
+  likelihood      Int?     // الاحتمالية (1-5)
+  impact          Int?     // الأثر (1-5)
+  riskScore       Int?     // محسوب: likelihood × impact
+  riskLevel       String?  // محسوب: حرج/عالٍ/متوسط/منخفض
+  ownerId         String?
+  mitigationPlan  String?  @db.Text
+  status          String?  @default("مفتوحة")
+  identifiedDate  DateTime @default(now())
+  reviewDate      DateTime?
+  
+  riskLinks       RiskLink[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([riskLevel])
+  @@index([status])
+}
+
+// 23 — Outcome Metrics
+model OutcomeMetric {
+  id                  String   @id @default(cuid())
+  code                String   @unique // MET-001
+  metricName          String   // اسم المؤشر
+  description         String?  @db.Text
+  category            String?  // فئة المؤشر
+  unit                String?  // وحدة القياس
+  targetValue         Decimal? @db.Decimal(15, 2)
+  currentValue        Decimal? @db.Decimal(15, 2)
+  achievementPct      Decimal? @db.Decimal(5, 2)  // computed
+  varianceFromTarget  Decimal? @db.Decimal(15, 2) // computed
+  status              String?  // على المسار / في خطر / خارج المسار / تجاوز
+  measurementDate     DateTime?
+  frequency           String?  // التكرار
+  ownerId             String?
+  
+  metricLinks         MetricLink[]
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  @@index([status])
+  @@index([category])
+}
+
+// 24 — Communications
+model Communication {
+  id              String   @id @default(cuid())
+  code            String   @unique // COM-001
+  title           String   // عنوان الاتصال
+  channel         String?  // قناة الاتصال
+  audience        String?  // الجمهور المستهدف
+  publishDate     DateTime?
+  reach           Int?     // الوصول
+  engagement      Int?     // التفاعل
+  url             String?
+  content         String?  @db.Text
+  status          String?
+  
+  commLinks       CommunicationLink[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([channel])
+}
+
+// ============================================================
+// POLYMORPHIC LINK TABLES (v11)
+// ============================================================
+
+enum LinkedEntity {
+  IDEA
+  INITIATIVE
+  CHALLENGE
+  PILOT
+  PARTNER
+  EVENT
+}
+
+// 25 — Document Links
+model DocumentLink {
+  id              String       @id @default(cuid())
+  documentId      String
+  document        Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  linkedEntity    LinkedEntity
+  
+  // Optional foreign keys for typed relations
+  ideaId          String?
+  idea            Idea?        @relation(fields: [ideaId], references: [id], onDelete: SetNull)
+  initiativeId    String?
+  initiative      Initiative?  @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+  pilotId         String?
+  pilot           Pilot?       @relation(fields: [pilotId], references: [id], onDelete: SetNull)
+  
+  linkRole        String?      // دور الوثيقة في الكيان
+  
+  createdAt       DateTime     @default(now())
+  
+  @@index([documentId])
+  @@index([linkedEntity])
+}
+
+// 26 — Risk Links
+model RiskLink {
+  id              String       @id @default(cuid())
+  riskId          String
+  risk            Risk         @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  linkedEntity    LinkedEntity
+  
+  initiativeId    String?
+  initiative      Initiative?  @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+  
+  linkRole        String?
+  
+  createdAt       DateTime     @default(now())
+  
+  @@index([riskId])
+  @@index([linkedEntity])
+}
+
+// 27 — Metric Links
+model MetricLink {
+  id              String        @id @default(cuid())
+  metricId        String
+  metric          OutcomeMetric @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  linkedEntity    LinkedEntity
+  
+  initiativeId    String?
+  initiative      Initiative?   @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+  
+  linkRole        String?
+  
+  createdAt       DateTime      @default(now())
+  
+  @@index([metricId])
+  @@index([linkedEntity])
+}
+
+// 28 — Communication Links
+model CommunicationLink {
+  id              String         @id @default(cuid())
+  communicationId String
+  communication   Communication  @relation(fields: [communicationId], references: [id], onDelete: Cascade)
+  linkedEntity    LinkedEntity
+  
+  initiativeId    String?
+  initiative      Initiative?    @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+  
+  linkRole        String?
+  
+  createdAt       DateTime       @default(now())
+  
+  @@index([communicationId])
+  @@index([linkedEntity])
+}
