@@ -6,9 +6,9 @@ export const config = {
      * Protect all routes EXCEPT:
      * - /login (auth page)
      * - /api/auth/* (NextAuth endpoints)
+     * - /api/health (public diagnostics)
      * - /_next/* (Next.js internals)
-     * - /favicon, /robots, etc.
      */
-    '/((?!login|api/auth|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
+    '/((?!login|api/auth|api/health|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
   ],
 };

@@ -91,12 +91,21 @@ function buildProviders() {
   return providers;
 }
 
+// CRITICAL: Validate or generate a build-time fallback secret.
+// In production, NEXTAUTH_SECRET must be set as an env var.
+// This fallback prevents app crashes during initial deployment.
+const NEXTAUTH_SECRET_FALLBACK = 'INSECURE_FALLBACK_REPLACE_IN_PRODUCTION_xK7vMpQ2rN8sB4cY6jL1wF9hT3uX5dG0';
+
+if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV === 'production') {
+  console.error('⚠️ CRITICAL: NEXTAUTH_SECRET is not set. Using insecure fallback. SET THIS IN VERCEL IMMEDIATELY!');
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
   providers: buildProviders(),
   pages: { signIn: '/login', error: '/login', verifyRequest: '/login?check-email=1' },
   session: { strategy: 'database', maxAge: 24 * 60 * 60 },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || NEXTAUTH_SECRET_FALLBACK,
   callbacks: {
     async signIn({ user }) {
       const email = (user.email || '').toLowerCase();
