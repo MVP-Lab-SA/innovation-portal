@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Lightbulb, Trophy, TestTube, FlaskConical,
   Briefcase, Users, AlertTriangle, Target, Megaphone,
   ChevronLeft, Sparkles, Settings, Database, ChevronDown, History,
-  KanbanSquare, Search, Bell,
+  KanbanSquare, Search, Bell, ClipboardCheck, HelpCircle, UserCircle,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -69,6 +69,14 @@ export function Sidebar({ collapsed = false, onToggle, mobileOpen = false, onMob
           <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
           {!collapsed && <span>الرئيسية</span>}
         </Link>
+        <Link href="/my-work" className={cn(
+          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+          pathname === '/my-work' ? 'bg-ministry-green text-white shadow-soft'
+            : 'text-text-secondary hover:bg-ministry-green-soft hover:text-ministry-green-deep'
+        )} title={collapsed ? 'نشاطي' : undefined}>
+          <UserCircle className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && <span>نشاطي</span>}
+        </Link>
         <Link href="/tasks" className={cn(
           'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
           pathname === '/tasks' ? 'bg-ministry-green text-white shadow-soft'
@@ -92,6 +100,22 @@ export function Sidebar({ collapsed = false, onToggle, mobileOpen = false, onMob
         )} title={collapsed ? 'الإشعارات' : undefined}>
           <Bell className="w-5 h-5 flex-shrink-0" />
           {!collapsed && <span>الإشعارات</span>}
+        </Link>
+        <Link href="/approvals" className={cn(
+          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+          pathname === '/approvals' ? 'bg-ministry-green text-white shadow-soft'
+            : 'text-text-secondary hover:bg-ministry-green-soft hover:text-ministry-green-deep'
+        )} title={collapsed ? 'طابور الاعتماد' : undefined}>
+          <ClipboardCheck className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && <span>طابور الاعتماد</span>}
+        </Link>
+        <Link href="/help" className={cn(
+          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+          pathname === '/help' ? 'bg-ministry-green text-white shadow-soft'
+            : 'text-text-secondary hover:bg-ministry-green-soft hover:text-ministry-green-deep'
+        )} title={collapsed ? 'المساعدة' : undefined}>
+          <HelpCircle className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && <span>المساعدة</span>}
         </Link>
       </div>
 

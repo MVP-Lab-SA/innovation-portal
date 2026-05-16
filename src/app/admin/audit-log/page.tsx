@@ -6,6 +6,7 @@ import { AppShell } from '@/components/AppShell';
 import { DataTable } from '@/components/DataTable';
 import { useEntities } from '@/hooks/useData';
 import { formatDate } from '@/lib/utils';
+import { ENTITY_CONFIGS } from '@/lib/entityConfigs';
 
 interface AuditRow {
   id: string;
@@ -20,6 +21,10 @@ interface AuditRow {
 }
 
 const ACTIONS = ['ALL', 'CREATE', 'UPDATE', 'DELETE'] as const;
+const ACTION_LABEL: Record<string, string> = {
+  ALL: 'الكل', CREATE: 'إنشاء', UPDATE: 'تعديل', DELETE: 'حذف',
+};
+const entityLabel = (slug: string) => ENTITY_CONFIGS[slug]?.arabicName ?? slug;
 
 export default function AuditLogPage() {
   const [action, setAction] = useState<(typeof ACTIONS)[number]>('ALL');
@@ -51,7 +56,7 @@ export default function AuditLogPage() {
               onChange={e => setAction(e.target.value as (typeof ACTIONS)[number])}
               className="input-base"
             >
-              {ACTIONS.map(a => <option key={a} value={a}>{a === 'ALL' ? 'الكل' : a}</option>)}
+              {ACTIONS.map(a => <option key={a} value={a}>{ACTION_LABEL[a]}</option>)}
             </select>
           </div>
           <div>
@@ -72,9 +77,17 @@ export default function AuditLogPage() {
         title="الأحداث"
         columns={[
           { key: 'createdAt', label: 'التاريخ', type: 'date' },
-          { key: 'action', label: 'الإجراء', type: 'badge' },
-          { key: 'entity', label: 'الكيان' },
-          { key: 'entityId', label: 'معرّف السجل' },
+          {
+            key: 'action',
+            label: 'الإجراء',
+            render: (v) => <span className="badge badge-info">{ACTION_LABEL[String(v)] ?? String(v)}</span>,
+          },
+          { key: 'entity', label: 'الكيان', render: (v) => entityLabel(String(v)) },
+          {
+            key: 'entityId',
+            label: 'السجل',
+            render: (v) => v ? <span className="font-mono text-xs text-text-muted">{String(v).slice(0, 10)}…</span> : '—',
+          },
           {
             key: 'userId',
             label: 'المستخدم',
@@ -110,7 +123,7 @@ export default function AuditLogPage() {
             <div className="flex items-center justify-between p-5 border-b border-border">
               <div>
                 <h2 className="text-base font-bold text-text-primary">
-                  {detail.action} — {detail.entity}
+                  {ACTION_LABEL[detail.action] ?? detail.action} — {entityLabel(detail.entity)}
                 </h2>
                 <p className="text-xs text-text-muted mt-0.5" suppressHydrationWarning>
                   {formatDate(detail.createdAt)} · {detail.user?.email ?? detail.userId}

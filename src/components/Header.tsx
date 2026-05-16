@@ -103,7 +103,7 @@ export function Header({ title, subtitle, showRefresh = false, onRefresh, action
               <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-ministry-green-soft transition-all">
                 {user.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.image} alt={user.name || ''} className="w-8 h-8 rounded-full border-2 border-ministry-green/20" />
+                  <img src={user.image} alt={user.name || 'صورة المستخدم'} className="w-8 h-8 rounded-full border-2 border-ministry-green/20" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-ministry-green text-white flex items-center justify-center">
                     <User className="w-4 h-4" />

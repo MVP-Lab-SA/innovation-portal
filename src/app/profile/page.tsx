@@ -75,7 +75,7 @@ export default function ProfilePage() {
           <div className="card mb-6 flex items-center gap-4">
             {profile.image ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.image} alt="" className="w-16 h-16 rounded-full border-2 border-ministry-green/20" />
+              <img src={profile.image} alt={profile.name || 'صورة المستخدم'} className="w-16 h-16 rounded-full border-2 border-ministry-green/20" />
             ) : (
               <div className="w-16 h-16 rounded-full bg-ministry-green text-white flex items-center justify-center">
                 <User className="w-7 h-7" />

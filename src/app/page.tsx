@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { AppShell } from '@/components/AppShell';
 import { WelcomeModal } from '@/components/WelcomeModal';
 import { DASHBOARDS } from '@/lib/navigation';
-import { LayoutDashboard, Sparkles, Activity, Database, ArrowLeft } from 'lucide-react';
+import { ENTITY_SLUGS } from '@/lib/entityConfigs';
+import { LayoutDashboard, Sparkles, Layers, Database, ArrowLeft } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,8 +26,8 @@ export default async function HomePage() {
         
         <div className="relative">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm text-xs font-medium mb-3">
-            <Activity className="w-3 h-3" />
-            <span>قاعدة بيانات Neon Postgres • بيانات فورية</span>
+            <Sparkles className="w-3 h-3" />
+            <span>بيانات محدّثة لحظياً</span>
           </div>
           <h2 className="text-3xl md:text-4xl font-extrabold mb-3">
             مرحباً، {userName} 👋
@@ -52,9 +53,9 @@ export default async function HomePage() {
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'لوحة تحليلية', value: '19', icon: LayoutDashboard, color: 'text-ministry-green' },
+          { label: 'لوحة تحليلية', value: String(DASHBOARDS.length), icon: LayoutDashboard, color: 'text-ministry-green' },
           { label: 'جدول بيانات', value: '36', icon: Database, color: 'text-blue-600' },
-          { label: 'مؤشر أداء', value: '50+', icon: Activity, color: 'text-purple-600' },
+          { label: 'كيان مُدار', value: String(ENTITY_SLUGS.length), icon: Layers, color: 'text-purple-600' },
           { label: 'تحديث', value: 'مباشر', icon: Sparkles, color: 'text-amber-600' },
         ].map((stat, idx) => {
           const Icon = stat.icon;

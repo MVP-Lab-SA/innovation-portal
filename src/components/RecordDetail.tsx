@@ -36,12 +36,40 @@ const ADD_RELATION: Record<string, Record<string, { entity: string; parentField:
   challenges: { expertAssignments: { entity: 'expert-challenge-assignments', parentField: 'challengeId' } },
 };
 
-/** Pick a human label off a related record. */
+/** Arabic labels for relation section keys (avoids showing raw field names). */
+const RELATION_LABELS: Record<string, string> = {
+  submitterCem: 'مقدّم الفكرة',
+  relatedChallenge: 'التحدي المرتبط',
+  evaluations: 'التقييمات',
+  expertAssignments: 'الخبراء المعيّنون',
+  ideaAssignments: 'الأفكار المُسندة',
+  owner: 'المالك',
+  milestones: 'المراحل الرئيسية',
+  tasks: 'المهام',
+  partners: 'الشركاء',
+  ideas: 'الأفكار',
+  sponsorships: 'الرعايات',
+  interactions: 'التفاعلات',
+  strategicSource: 'المصدر الاستراتيجي',
+  user: 'المستخدم',
+};
+
+/** Pick a human label off a related record — never falls back to a raw ID. */
 function relLabel(r: Row): string {
-  return String(
+  const direct =
     r.title ?? r.name ?? r.fullName ?? r.partnerName ?? r.metricName ??
-    r.criterionName ?? r.subject ?? r.code ?? r.id ?? '—',
-  );
+    r.criterionName ?? r.subject ?? r.sourceName;
+  if (direct) return String(direct);
+  // Dig into a nested relation object (e.g. junction rows carry `expert`/`partner`).
+  for (const nk of ['expert', 'partner', 'idea', 'challenge', 'initiative', 'submitterCem']) {
+    const nested = r[nk];
+    if (nested && typeof nested === 'object') {
+      const n = nested as Row;
+      const nl = n.fullName ?? n.partnerName ?? n.title ?? n.name ?? n.code;
+      if (nl) return String(nl);
+    }
+  }
+  return String(r.code ?? '—');
 }
 
 export function RecordDetail({ entity, id }: { entity: string; id: string }) {
@@ -227,7 +255,8 @@ export function RecordDetail({ entity, id }: { entity: string; id: string }) {
             <div key={key} className="card mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-bold text-text-primary">
-                  {key} {Array.isArray(value) && <span className="text-text-muted font-normal">({value.length})</span>}
+                  {RELATION_LABELS[key] ?? key}
+                  {Array.isArray(value) && <span className="text-text-muted font-normal"> ({value.length})</span>}
                 </h3>
                 {addCfg && canEdit && (
                   <button
