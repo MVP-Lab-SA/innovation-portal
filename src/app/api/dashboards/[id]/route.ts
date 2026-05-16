@@ -65,6 +65,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         return NextResponse.json(await getMilestonesDashboard(f));
       case 'partner-interactions':
         return NextResponse.json(await getPartnerInteractionsDashboard(f));
+      case 'business-challenges':
+        return NextResponse.json(await getBusinessChallengesDashboard(f));
       default:
         return NextResponse.json({ error: 'unknown_dashboard' }, { status: 404 });
     }
@@ -577,5 +579,39 @@ async function getPartnerInteractionsDashboard(f: DashFilters) {
       byType: countByField(interactions, 'interactionType'),
     },
     list: interactions,
+  };
+}
+
+async function getBusinessChallengesDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', category: 'domain' });
+  const challenges = await prisma.businessChallenge.findMany({
+    where,
+    include: {
+      strategicSource: { select: { code: true, sourceName: true } },
+      _count: { select: { children: true, challenges: true } },
+    },
+    orderBy: [{ sequence: 'asc' }, { createdAt: 'desc' }],
+  });
+
+  const main = challenges.filter(c => c.classification === 'رئيسي' || !c.parentId);
+  const high = challenges.filter(c =>
+    c.priority === 'عالي' || c.priority === 'عالية' || c.priority === 'عالية جداً' || c.priority === 'حرجة');
+  const derivedEvents = challenges.reduce((s, c) => s + (c._count?.challenges || 0), 0);
+
+  return {
+    kpis: {
+      total: challenges.length,
+      mainChallenges: main.length,
+      highPriority: high.length,
+      open: challenges.filter(c => c.status === 'مفتوح' || c.status === 'قيد المعالجة').length,
+      derivedEvents,
+    },
+    charts: {
+      byDomain: countByField(challenges, 'domain'),
+      byPriority: countByField(challenges, 'priority'),
+      byStatus: countByField(challenges, 'status'),
+      byType: countByField(challenges, 'challengeType'),
+    },
+    list: challenges,
   };
 }

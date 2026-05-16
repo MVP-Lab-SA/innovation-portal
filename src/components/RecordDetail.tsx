@@ -52,6 +52,10 @@ const RELATION_LABELS: Record<string, string> = {
   interactions: 'التفاعلات',
   strategicSource: 'المصدر الاستراتيجي',
   user: 'المستخدم',
+  parent: 'التحدي الرئيسي',
+  children: 'التحديات الفرعية',
+  challenges: 'الهاكاثونات والمسابقات المشتقة',
+  businessChallenge: 'تحدي الأعمال المرتبط',
 };
 
 /** Pick a human label off a related record — never falls back to a raw ID. */

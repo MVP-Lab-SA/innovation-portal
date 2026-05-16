@@ -461,9 +461,10 @@ model StrategicSource {
   url             String?
   publicationDate DateTime?
   relevance       String?    // الأهمية
-  
-  challenges      Challenge[]
-  
+
+  challenges         Challenge[]
+  businessChallenges BusinessChallenge[]
+
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 }
@@ -486,17 +487,69 @@ model Challenge {
   
   strategicSourceId   String?
   strategicSource     StrategicSource? @relation(fields: [strategicSourceId], references: [id])
-  
+
+  // Derived from a business challenge / opportunity
+  businessChallengeId String?
+  businessChallenge   BusinessChallenge? @relation(fields: [businessChallengeId], references: [id])
+
   // Relations
   ideas               Idea[]
   expertAssignments   ExpertChallengeAssignment[]
   initiatives         Initiative[]    @relation("ChallengeInitiatives")
-  
+
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
-  
+
   @@index([status])
   @@index([category])
+  @@index([businessChallengeId])
+}
+
+// 12a — Business Challenges & Opportunities
+// The strategic concept from which Hackathons/Competitions (Challenge),
+// Ideas and Pilots are derived.
+model BusinessChallenge {
+  id                  String   @id @default(cuid())
+  code                String   @unique // BCH-001
+  sequence            String?  // التسلسل (e.g. "1", "1.1")
+  title               String   // التحدي
+  owner               String?  // مالك التحدي
+  classification      String?  // تصنيف التحدي
+  challengeType       String?  // نوع التحدي (رئيسي / فرعي)
+  domain              String?  // مجال التحدي
+  subDomain           String?  // المجال الفرعي
+  service             String?  // الخدمة
+  stakeholders        String?  @db.Text // أصحاب المصلحة
+  definingElements    String?  @db.Text // العناصر التعريفية
+  impact              String?  @db.Text // أثر التحدي
+  priority            String?  // مستوى الأولوية
+  focusQuestions      String?  @db.Text // أسئلة تركيز الجهد
+  proposals           String?  @db.Text // مقترحات تركيز الجهد
+  proposalType        String?  // تصنيف المقترحات
+  innovationOpportunity String? @db.Text // الفرصة الابتكارية
+  status              String?  @default("مفتوح") // حالة التحدي
+  track               String?  // مسار التحدي
+  presentationFile    String?  // ملف العرض
+
+  // Strategic source the challenge originates from
+  strategicSourceId   String?
+  strategicSource     StrategicSource? @relation(fields: [strategicSourceId], references: [id])
+
+  // Self-referential hierarchy (رئيسي → فرعي)
+  parentId            String?
+  parent              BusinessChallenge?  @relation("BusinessChallengeHierarchy", fields: [parentId], references: [id])
+  children            BusinessChallenge[] @relation("BusinessChallengeHierarchy")
+
+  // Derived events
+  challenges          Challenge[]
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([status])
+  @@index([priority])
+  @@index([parentId])
+  @@index([strategicSourceId])
 }
 
 // 13 — CEM (Innovators/Individuals)

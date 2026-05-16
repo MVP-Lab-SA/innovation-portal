@@ -7,7 +7,8 @@
     "node": ">=20 <24"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3002",
+    "dev:clean": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch(e){}\" && next dev -p 3002",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
@@ -19,7 +20,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:status": "prisma migrate status",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "import:business-challenges": "node scripts/import-business-challenges.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",

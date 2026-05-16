@@ -21,6 +21,7 @@ import {
   ClipboardCheck,
   Flag,
   MessageCircle,
+  Puzzle,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -36,7 +37,7 @@ export interface NavItem {
 export const DASHBOARDS: NavItem[] = [
   { id: 'DASH-01', title: 'اللوحة التنفيذية', description: 'نظرة شاملة', href: '/dashboards/executive', icon: LayoutDashboard, color: 'text-ministry-green' },
   { id: 'DASH-02', title: 'قمع الأفكار', description: 'الأفكار من التقديم للتنفيذ', href: '/dashboards/ideas', icon: Lightbulb, color: 'text-amber-600' },
-  { id: 'DASH-03', title: 'التحديات والهاكاثونات', description: 'التحديات والمبتكرين', href: '/dashboards/challenges', icon: Trophy, color: 'text-purple-600' },
+  { id: 'DASH-03', title: 'الهاكاثونات والمسابقات', description: 'الفعاليات التنافسية والمبتكرون', href: '/dashboards/challenges', icon: Trophy, color: 'text-purple-600' },
   { id: 'DASH-04', title: 'طلبات الساندبوكس', description: 'البيئة التجريبية', href: '/dashboards/sandbox', icon: TestTube, color: 'text-cyan-600' },
   { id: 'DASH-05', title: 'التجارب التشغيلية', description: 'التجارب الميدانية', href: '/dashboards/pilots', icon: FlaskConical, color: 'text-orange-600' },
   { id: 'DASH-06', title: 'محفظة المبادرات', description: 'متابعة المبادرات', href: '/dashboards/initiatives', icon: Briefcase, color: 'text-blue-600' },
@@ -53,6 +54,7 @@ export const DASHBOARDS: NavItem[] = [
   { id: 'DASH-17', title: 'تقييمات الأفكار', description: 'تحليل التقييمات', href: '/dashboards/evaluations', icon: ClipboardCheck, color: 'text-lime-600' },
   { id: 'DASH-18', title: 'المراحل الرئيسية', description: 'متابعة المراحل', href: '/dashboards/milestones', icon: Flag, color: 'text-sky-600' },
   { id: 'DASH-19', title: 'تفاعلات الشركاء', description: 'سجل التواصل', href: '/dashboards/partner-interactions', icon: MessageCircle, color: 'text-violet-600' },
+  { id: 'DASH-20', title: 'التحديات وفرص الأعمال', description: 'التحديات الاستراتيجية ومصدر الهاكاثونات', href: '/dashboards/business-challenges', icon: Puzzle, color: 'text-purple-700' },
 ];
 
 export const ADMIN_ITEMS: NavItem[] = [

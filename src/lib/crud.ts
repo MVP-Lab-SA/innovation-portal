@@ -313,17 +313,32 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
   'eval-rubrics': { model: 'evalRubric', options: { codePrefix: 'RUB', searchFields: ['code', 'criterionName'] }, arabicName: 'معايير التقييم' },
   'calendar-events': { model: 'calendarEvent', options: { codePrefix: 'EVT', searchFields: ['code', 'title'] }, arabicName: 'الفعاليات' },
   'strategic-sources': { model: 'strategicSource', options: { codePrefix: 'STR', searchFields: ['code', 'sourceName'] }, arabicName: 'المصادر الاستراتيجية' },
+  'business-challenges': {
+    model: 'businessChallenge',
+    options: {
+      codePrefix: 'BCH',
+      searchFields: ['code', 'title', 'domain', 'service'],
+      detailInclude: {
+        strategicSource: { select: { code: true, sourceName: true } },
+        parent: { select: { id: true, code: true, title: true } },
+        children: { select: { id: true, code: true, title: true, status: true } },
+        challenges: { select: { id: true, code: true, title: true, status: true } },
+      },
+    },
+    arabicName: 'التحديات وفرص الأعمال',
+  },
   'challenges': {
     model: 'challenge',
     options: {
       codePrefix: 'CHL',
       searchFields: ['code', 'title', 'description'],
       detailInclude: {
+        businessChallenge: { select: { code: true, title: true } },
         ideas: { select: { id: true, code: true, title: true, status: true } },
         expertAssignments: { include: { expert: { select: { code: true, fullName: true } } } },
       },
     },
-    arabicName: 'التحديات',
+    arabicName: 'الهاكاثونات والمسابقات',
   },
   'cems': { model: 'cem', options: { codePrefix: 'INV', searchFields: ['code', 'fullName', 'email'] }, arabicName: 'المبتكرون' },
   'partners': {
