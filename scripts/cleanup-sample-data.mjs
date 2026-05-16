@@ -20,7 +20,8 @@ const prisma = new PrismaClient();
 const confirmed = process.argv.includes('--confirm');
 
 // Newest N rows to KEEP per entity (the real imported data).
-const KEEP = { sandboxApplication: 47, expert: 51, initiative: 6 };
+// Campaigns: keep 0 — all 12 are seed placeholders, none were ever started.
+const KEEP = { sandboxApplication: 47, expert: 51, initiative: 6, campaign: 0 };
 
 async function oldestIds(model, keep) {
   const all = await prisma[model].findMany({
@@ -34,11 +35,13 @@ async function main() {
   const sandboxIds = await oldestIds('sandboxApplication', KEEP.sandboxApplication);
   const expertIds = await oldestIds('expert', KEEP.expert);
   const initiativeIds = await oldestIds('initiative', KEEP.initiative);
+  const campaignIds = await oldestIds('campaign', KEEP.campaign);
 
   console.log('Will delete:');
   console.log(`  sandbox applications: ${sandboxIds.length}`);
   console.log(`  experts: ${expertIds.length} (+ their assignments & opinions)`);
   console.log(`  initiatives: ${initiativeIds.length} (+ their milestones, cascade)`);
+  console.log(`  campaigns: ${campaignIds.length} (seed placeholders — none started)`);
 
   if (!confirmed) {
     console.log('\n⚠  Dry run. Re-run with --confirm to actually delete.');
@@ -64,6 +67,11 @@ async function main() {
   // Initiatives — milestones & partners cascade; tasks/links set null.
   const ini = await prisma.initiative.deleteMany({ where: { id: { in: initiativeIds } } });
   console.log(`🗑  Deleted ${ini.count} initiatives`);
+
+  // Campaigns — junction links & expert-challenge assignments cascade;
+  // idea/initiative/sandbox references set null.
+  const cmp = await prisma.campaign.deleteMany({ where: { id: { in: campaignIds } } });
+  console.log(`🗑  Deleted ${cmp.count} campaigns`);
 
   console.log('\n✅ Cleanup complete. The DB now holds only the imported real data.');
 }
