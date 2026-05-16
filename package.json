@@ -25,7 +25,8 @@
     "import:sandbox-applications": "node scripts/import-sandbox-applications.mjs",
     "import:experts": "node scripts/import-experts.mjs",
     "import:initiatives": "node scripts/import-initiatives.mjs",
-    "normalize:business-challenges": "node scripts/normalize-business-challenges.mjs"
+    "normalize:business-challenges": "node scripts/normalize-business-challenges.mjs",
+    "cleanup:sample-data": "node scripts/cleanup-sample-data.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
