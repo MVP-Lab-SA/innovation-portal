@@ -8,6 +8,11 @@ interface CrudOptions {
   searchFields?: string[];
   defaultOrderBy?: Record<string, 'asc' | 'desc'>;
   include?: Record<string, unknown>;
+  /**
+   * Richer include applied ONLY to the single-record GET (detail pages).
+   * Kept separate from `include` so list endpoints stay lightweight.
+   */
+  detailInclude?: Record<string, unknown>;
   codePrefix?: string;
 }
 
@@ -195,7 +200,10 @@ export function createRecordHandlers(slug: string, modelName: string, options: C
       }
       try {
         const model = getModel(modelName);
-        const record = await model.findUnique({ where: { id: params.id }, include: options.include });
+        const record = await model.findUnique({
+          where: { id: params.id },
+          include: options.detailInclude ?? options.include,
+        });
         if (!record) return NextResponse.json({ error: 'not_found' }, { status: 404 });
         return NextResponse.json(record);
       } catch (err) {
@@ -252,20 +260,79 @@ export function createRecordHandlers(slug: string, modelName: string, options: C
 
 export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
   'employees': { model: 'employee', options: { codePrefix: 'EMP', searchFields: ['code', 'fullName', 'email', 'department'] }, arabicName: 'الموظفون' },
-  'initiatives': { model: 'initiative', options: { codePrefix: 'INI', searchFields: ['code', 'name', 'description'] }, arabicName: 'المبادرات' },
+  'initiatives': {
+    model: 'initiative',
+    options: {
+      codePrefix: 'INI',
+      searchFields: ['code', 'name', 'description'],
+      detailInclude: {
+        owner: { select: { code: true, fullName: true } },
+        milestones: { select: { id: true, code: true, name: true, status: true, progress: true } },
+        tasks: { select: { id: true, code: true, title: true, status: true, priority: true } },
+        partners: { include: { partner: { select: { code: true, partnerName: true } } } },
+      },
+    },
+    arabicName: 'المبادرات',
+  },
   'milestones': { model: 'milestone', options: { codePrefix: 'MIL', searchFields: ['code', 'name'] }, arabicName: 'المراحل الرئيسية' },
   'tasks': { model: 'task', options: { codePrefix: 'TSK', searchFields: ['code', 'title'] }, arabicName: 'المهام' },
-  'experts': { model: 'expert', options: { codePrefix: 'SME', searchFields: ['code', 'fullName', 'email', 'specialization'] }, arabicName: 'الخبراء' },
-  'ideas': { model: 'idea', options: { codePrefix: 'IDE', searchFields: ['code', 'title', 'description'] }, arabicName: 'الأفكار' },
+  'experts': {
+    model: 'expert',
+    options: {
+      codePrefix: 'SME',
+      searchFields: ['code', 'fullName', 'email', 'specialization'],
+      detailInclude: {
+        ideaAssignments: { include: { idea: { select: { code: true, title: true } } } },
+        evaluations: { select: { id: true, code: true, status: true, overallScore: true } },
+      },
+    },
+    arabicName: 'الخبراء',
+  },
+  'ideas': {
+    model: 'idea',
+    options: {
+      codePrefix: 'IDE',
+      searchFields: ['code', 'title', 'description'],
+      detailInclude: {
+        submitterCem: { select: { code: true, fullName: true } },
+        relatedChallenge: { select: { code: true, title: true } },
+        evaluations: { select: { id: true, code: true, status: true, overallScore: true } },
+        expertAssignments: { include: { expert: { select: { code: true, fullName: true } } } },
+      },
+    },
+    arabicName: 'الأفكار',
+  },
   'pilots': { model: 'pilot', options: { codePrefix: 'PIL', searchFields: ['code', 'name'] }, arabicName: 'التجارب التشغيلية' },
   'sandbox-applications': { model: 'sandboxApplication', options: { codePrefix: 'SBX', searchFields: ['code', 'solutionName', 'entityName'] }, arabicName: 'طلبات الساندبوكس' },
   'evaluations': { model: 'evaluation', options: { codePrefix: 'EVL', searchFields: ['code'] }, arabicName: 'التقييمات' },
   'eval-rubrics': { model: 'evalRubric', options: { codePrefix: 'RUB', searchFields: ['code', 'criterionName'] }, arabicName: 'معايير التقييم' },
   'calendar-events': { model: 'calendarEvent', options: { codePrefix: 'EVT', searchFields: ['code', 'title'] }, arabicName: 'الفعاليات' },
   'strategic-sources': { model: 'strategicSource', options: { codePrefix: 'STR', searchFields: ['code', 'sourceName'] }, arabicName: 'المصادر الاستراتيجية' },
-  'challenges': { model: 'challenge', options: { codePrefix: 'CHL', searchFields: ['code', 'title', 'description'] }, arabicName: 'التحديات' },
+  'challenges': {
+    model: 'challenge',
+    options: {
+      codePrefix: 'CHL',
+      searchFields: ['code', 'title', 'description'],
+      detailInclude: {
+        ideas: { select: { id: true, code: true, title: true, status: true } },
+        expertAssignments: { include: { expert: { select: { code: true, fullName: true } } } },
+      },
+    },
+    arabicName: 'التحديات',
+  },
   'cems': { model: 'cem', options: { codePrefix: 'INV', searchFields: ['code', 'fullName', 'email'] }, arabicName: 'المبتكرون' },
-  'partners': { model: 'partner', options: { codePrefix: 'PRT', searchFields: ['code', 'partnerName'] }, arabicName: 'الشركاء' },
+  'partners': {
+    model: 'partner',
+    options: {
+      codePrefix: 'PRT',
+      searchFields: ['code', 'partnerName'],
+      detailInclude: {
+        sponsorships: { select: { id: true, code: true, sponsorshipTier: true, totalValueSar: true, status: true } },
+        interactions: { select: { id: true, code: true, interactionType: true, subject: true, interactionDate: true } },
+      },
+    },
+    arabicName: 'الشركاء',
+  },
   'sponsorships': { model: 'sponsorship', options: { codePrefix: 'SPN', searchFields: ['code'] }, arabicName: 'الرعايات' },
   'partner-interactions': { model: 'partnerInteraction', options: { codePrefix: 'INT', searchFields: ['code', 'subject'] }, arabicName: 'تفاعلات الشركاء' },
   'documents': { model: 'document', options: { codePrefix: 'DOC', searchFields: ['code', 'title'] }, arabicName: 'الوثائق' },

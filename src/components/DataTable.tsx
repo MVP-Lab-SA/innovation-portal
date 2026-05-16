@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import { Search, Download, ChevronUp, ChevronDown, Inbox, Plus, Edit, Trash2 } from 'lucide-react';
 import { cn, getStatusVariant, formatDate, formatCurrency } from '@/lib/utils';
 import * as XLSX from 'xlsx';
-import { useEffect } from 'react';
 
 export interface Column {
   key: string;
@@ -27,12 +27,14 @@ interface DataTableProps {
   onDelete?: (row: any) => void;
   canEdit?: boolean;
   canDelete?: boolean;
+  /** When set, the first column links to /records/{entitySlug}/{row.id}. */
+  entitySlug?: string;
 }
 
 export function DataTable({
   data, columns, searchable = true, exportable = true, title,
   emptyMessage = 'لا توجد بيانات', pageSize = 10,
-  onAdd, onEdit, onDelete, canEdit, canDelete,
+  onAdd, onEdit, onDelete, canEdit, canDelete, entitySlug,
 }: DataTableProps) {
   const [role, setRole] = useState<string | null>(null);
   useEffect(() => {
@@ -158,7 +160,23 @@ export function DataTable({
               <tbody>
                 {paginated.map((row, idx) => (
                   <tr key={row.id || idx}>
-                    {columns.map(col => <td key={col.key}>{renderCell(col, row)}</td>)}
+                    {columns.map((col, colIdx) => {
+                      const linkable = entitySlug && colIdx === 0 && row.id;
+                      return (
+                        <td key={col.key}>
+                          {linkable ? (
+                            <Link
+                              href={`/records/${entitySlug}/${row.id}`}
+                              className="text-ministry-green-deep hover:underline font-medium"
+                            >
+                              {renderCell(col, row)}
+                            </Link>
+                          ) : (
+                            renderCell(col, row)
+                          )}
+                        </td>
+                      );
+                    })}
                     {showActions && (
                       <td>
                         <div className="flex items-center gap-1 justify-center">

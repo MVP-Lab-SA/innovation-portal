@@ -80,6 +80,7 @@ function AdminDataInner() {
       <DataTable
         data={data}
         columns={config!.listColumns}
+        entitySlug={selectedEntity}
         onAdd={() => { setEditingRow(null); setShowForm(true); }}
         onEdit={(row) => { setEditingRow(row); setShowForm(true); }}
         onDelete={handleDelete}
