@@ -19,18 +19,26 @@ export function Header({ title, subtitle, showRefresh = false, onRefresh, action
   const [menuOpen, setMenuOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
+  const [today, setToday] = useState<string | null>(null);
+
   useEffect(() => {
     // Get Neon Auth session
     authClient.getSession().then((res: any) => {
       if (res?.data?.user) setUser(res.data.user);
     }).catch(() => {});
-    
+
     // Get our profile (with role) from API
     fetch('/api/me').then(r => r.ok ? r.json() : null).then(p => {
       if (p) setProfile(p);
     }).catch(() => {});
+
+    // Locale-dependent date: render only on the client to avoid SSR/hydration
+    // calendar/time mismatches.
+    setToday(new Date().toLocaleDateString('ar-SA', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    }));
   }, []);
-  
+
   const role = profile?.role;
   
   const handleRefresh = async () => {
@@ -48,8 +56,6 @@ export function Header({ title, subtitle, showRefresh = false, onRefresh, action
     }
   };
   
-  const today = new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  
   return (
     <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-border">
       <div className="px-6 py-4 flex items-center justify-between gap-4">
@@ -61,10 +67,12 @@ export function Header({ title, subtitle, showRefresh = false, onRefresh, action
         <div className="flex items-center gap-2">
           {actions}
           
-          <div className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg bg-ministry-green-soft text-ministry-green-deep text-sm font-medium">
-            <Calendar className="w-4 h-4" />
-            <span suppressHydrationWarning>{today}</span>
-          </div>
+          {today && (
+            <div className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg bg-ministry-green-soft text-ministry-green-deep text-sm font-medium">
+              <Calendar className="w-4 h-4" />
+              <span>{today}</span>
+            </div>
+          )}
           
           {showRefresh && (
             <button onClick={handleRefresh} disabled={refreshing}
