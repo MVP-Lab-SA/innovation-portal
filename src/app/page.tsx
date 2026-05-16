@@ -5,6 +5,8 @@ import { AppShell } from '@/components/AppShell';
 import { DASHBOARDS } from '@/components/Sidebar';
 import { LayoutDashboard, Sparkles, Activity, Database, ArrowLeft } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function HomePage() {
   const session = await getSessionWithProfile();
   if (!session?.profile) redirect('/login');

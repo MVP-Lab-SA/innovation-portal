@@ -1,5 +1,4 @@
 import { createNeonAuth } from '@neondatabase/auth/next/server';
-import { prisma } from './prisma';
 import type { UserRole } from '@prisma/client';
 
 const ALLOWED_DOMAINS = (process.env.ALLOWED_DOMAINS || 'momah.gov.sa,gov.sa')
@@ -61,6 +60,7 @@ export function isAllowedEmail(email: string): boolean {
  */
 export async function getSessionWithProfile() {
   try {
+    const { prisma } = await import('./prisma');
     const { data: session } = await auth.getSession();
     if (!session?.user) return null;
 
