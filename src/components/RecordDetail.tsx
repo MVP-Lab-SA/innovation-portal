@@ -33,10 +33,13 @@ const APPROVAL_FLOWS: Record<string, { field: string; approve: string; reject: s
 const ADD_RELATION: Record<string, Record<string, { entity: string; parentField: string }>> = {
   ideas: { expertAssignments: { entity: 'idea-expert-assignments', parentField: 'ideaId' } },
   initiatives: { partners: { entity: 'initiative-partners', parentField: 'initiativeId' } },
-  campaigns: { expertAssignments: { entity: 'expert-challenge-assignments', parentField: 'challengeId' } },
+  campaigns: {
+    expertAssignments: { entity: 'expert-challenge-assignments', parentField: 'challengeId' },
+    businessChallengeLinks: { entity: 'campaign-business-challenges', parentField: 'campaignId' },
+  },
   'business-challenges': {
     children: { entity: 'business-challenges', parentField: 'parentId' },
-    campaigns: { entity: 'campaigns', parentField: 'businessChallengeId' },
+    campaignLinks: { entity: 'campaign-business-challenges', parentField: 'businessChallengeId' },
     pilots: { entity: 'pilots', parentField: 'businessChallengeId' },
   },
 };
@@ -59,9 +62,11 @@ const RELATION_LABELS: Record<string, string> = {
   user: 'المستخدم',
   parent: 'التحدي الرئيسي',
   children: 'التحديات الفرعية',
-  campaigns: 'الحملات المرتبطة',
+  campaignLinks: 'الحملات المرتبطة',
+  businessChallengeLinks: 'تحديات الأعمال المشمولة',
   pilots: 'التجارب المرتبطة',
   businessChallenge: 'تحدي الأعمال المرتبط',
+  campaign: 'الحملة',
 };
 
 /** Pick a human label off a related record — never falls back to a raw ID. */
@@ -71,7 +76,7 @@ function relLabel(r: Row): string {
     r.criterionName ?? r.subject ?? r.sourceName;
   if (direct) return String(direct);
   // Dig into a nested relation object (e.g. junction rows carry `expert`/`partner`).
-  for (const nk of ['expert', 'partner', 'idea', 'challenge', 'initiative', 'submitterCem']) {
+  for (const nk of ['expert', 'partner', 'idea', 'challenge', 'campaign', 'businessChallenge', 'initiative', 'submitterCem']) {
     const nested = r[nk];
     if (nested && typeof nested === 'object') {
       const n = nested as Row;

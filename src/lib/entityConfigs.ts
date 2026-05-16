@@ -198,7 +198,7 @@ export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
       { key: 'code', label: 'المعرّف', type: 'badge' },
       { key: 'title', label: 'العنوان' },
       { key: 'track', label: 'المسار', type: 'badge' },
-      { key: 'category', label: 'الفئة', type: 'badge' },
+      { key: 'deliveryMethod', label: 'طريقة التنفيذ', type: 'badge' },
       { key: 'status', label: 'الحالة', type: 'status' },
       { key: 'launchDate', label: 'الإطلاق', type: 'date' },
       { key: 'prizeAmount', label: 'الجائزة', type: 'currency' },
@@ -206,8 +206,8 @@ export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
     formFields: [
       { key: 'title', label: 'العنوان', required: true, cols: 2 },
       { key: 'description', label: 'الوصف', type: 'textarea', cols: 2 },
-      { key: 'businessChallengeId', label: 'تحدي الأعمال المرتبط', helperText: 'BCH-... التحدي الذي تطلقه هذه الحملة' },
       { key: 'track', label: 'المسار', type: 'select', options: ['بحث وتطوير', 'ابتكار'] },
+      { key: 'deliveryMethod', label: 'طريقة التنفيذ', lookupCategory: 'CampaignMethod' },
       { key: 'category', label: 'الفئة', lookupCategory: 'ChallengeCategory' },
       { key: 'status', label: 'الحالة', lookupCategory: 'ChallengeStatus' },
       { key: 'launchDate', label: 'تاريخ الإطلاق', type: 'date' },
@@ -608,17 +608,31 @@ export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
 
   'expert-challenge-assignments': {
     slug: 'expert-challenge-assignments',
-    arabicName: 'إسناد الخبراء للتحديات',
-    description: 'ربط الخبراء بالتحديات',
+    arabicName: 'إسناد الخبراء للحملات',
+    description: 'ربط الخبراء بالحملات',
     listColumns: [
       { key: 'expertId', label: 'الخبير' },
-      { key: 'challengeId', label: 'التحدي' },
+      { key: 'challengeId', label: 'الحملة' },
       { key: 'role', label: 'الدور', type: 'badge' },
     ],
     formFields: [
       { key: 'expertId', label: 'معرّف الخبير', required: true, helperText: 'SME-... أو معرّف السجل' },
-      { key: 'challengeId', label: 'معرّف التحدي', required: true, helperText: 'CHL-... أو معرّف السجل' },
+      { key: 'challengeId', label: 'معرّف الحملة', required: true, helperText: 'CHL-... أو معرّف السجل' },
       { key: 'role', label: 'الدور', lookupCategory: 'ExpertRole' },
+    ],
+  },
+
+  'campaign-business-challenges': {
+    slug: 'campaign-business-challenges',
+    arabicName: 'تحديات الحملات',
+    description: 'ربط الحملات بتحديات الأعمال التي تعالجها',
+    listColumns: [
+      { key: 'campaignId', label: 'الحملة' },
+      { key: 'businessChallengeId', label: 'تحدي الأعمال' },
+    ],
+    formFields: [
+      { key: 'campaignId', label: 'معرّف الحملة', required: true, helperText: 'CHL-... أو معرّف السجل' },
+      { key: 'businessChallengeId', label: 'معرّف تحدي الأعمال', required: true, helperText: 'BCH-... أو معرّف السجل' },
     ],
   },
 };

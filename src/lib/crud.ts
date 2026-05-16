@@ -332,7 +332,7 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
         strategicSource: { select: { code: true, sourceName: true } },
         parent: { select: { id: true, code: true, title: true } },
         children: { select: { id: true, code: true, title: true, status: true } },
-        campaigns: { select: { id: true, code: true, title: true, status: true } },
+        campaignLinks: { include: { campaign: { select: { code: true, title: true, status: true } } } },
         pilots: { select: { id: true, code: true, name: true, status: true } },
       },
     },
@@ -344,12 +344,17 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
       codePrefix: 'CHL',
       searchFields: ['code', 'title', 'description'],
       detailInclude: {
-        businessChallenge: { select: { code: true, title: true } },
+        businessChallengeLinks: { include: { businessChallenge: { select: { code: true, title: true, status: true } } } },
         ideas: { select: { id: true, code: true, title: true, status: true } },
         expertAssignments: { include: { expert: { select: { code: true, fullName: true } } } },
       },
     },
     arabicName: 'الحملات',
+  },
+  'campaign-business-challenges': {
+    model: 'campaignBusinessChallenge',
+    options: { searchFields: ['campaignId', 'businessChallengeId'] },
+    arabicName: 'تحديات الحملات',
   },
   'cems': { model: 'cem', options: { codePrefix: 'INV', searchFields: ['code', 'fullName', 'email'] }, arabicName: 'المبتكرون' },
   'partners': {

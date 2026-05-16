@@ -475,9 +475,10 @@ model StrategicSource {
 }
 
 // 12 — Campaigns
-// A time-boxed release wave that orchestrates a business challenge into a
-// track (R&D / innovation) and into hackathons/competitions. Physically
-// still the "Challenge" table (@@map) so the rename needs no migration.
+// A time-boxed release wave that orchestrates a SET of business challenges
+// (many-to-many via CampaignBusinessChallenge) through a delivery method
+// (public/closed hackathon, open challenge, …) to attract ideas & solutions.
+// Physically still the "Challenge" table (@@map) so the rename needs no migration.
 model Campaign {
   id                  String          @id @default(cuid())
   code                String          @unique // CHL-001
@@ -485,6 +486,7 @@ model Campaign {
   description         String?         @db.Text
   category            String?         // فئة الحملة
   track               String?         // مسار الحملة (بحث وتطوير / ابتكار)
+  deliveryMethod      String?         // طريقة التنفيذ (هاكاثون عام / مغلق / …)
   status              String?         @default("مخطط له")
   launchDate          DateTime?
   closingDate         DateTime?
@@ -497,9 +499,8 @@ model Campaign {
   strategicSourceId   String?
   strategicSource     StrategicSource? @relation(fields: [strategicSourceId], references: [id])
 
-  // The business challenge this campaign releases
-  businessChallengeId String?
-  businessChallenge   BusinessChallenge? @relation(fields: [businessChallengeId], references: [id])
+  // Business challenges this campaign mobilises (M:N)
+  businessChallengeLinks CampaignBusinessChallenge[]
 
   // Relations
   ideas               Idea[]
@@ -512,6 +513,19 @@ model Campaign {
   @@map("Challenge")
   @@index([status])
   @@index([category])
+}
+
+// 12b — Campaign ↔ Business Challenge link (junction)
+model CampaignBusinessChallenge {
+  id                  String   @id @default(cuid())
+  campaignId          String
+  campaign            Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  businessChallengeId String
+  businessChallenge   BusinessChallenge @relation(fields: [businessChallengeId], references: [id], onDelete: Cascade)
+  createdAt           DateTime @default(now())
+
+  @@unique([campaignId, businessChallengeId])
+  @@index([campaignId])
   @@index([businessChallengeId])
 }
 
@@ -550,8 +564,8 @@ model BusinessChallenge {
   parent              BusinessChallenge?  @relation("BusinessChallengeHierarchy", fields: [parentId], references: [id])
   children            BusinessChallenge[] @relation("BusinessChallengeHierarchy")
 
-  // Derived campaigns / pilots
-  campaigns           Campaign[]
+  // Campaigns that mobilise this challenge (M:N) + derived pilots
+  campaignLinks       CampaignBusinessChallenge[]
   pilots              Pilot[]
 
   createdAt           DateTime @default(now())

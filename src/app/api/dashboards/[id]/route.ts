@@ -193,8 +193,7 @@ async function getCampaignsDashboard(f: DashFilters) {
     where,
     include: {
       strategicSource: true,
-      businessChallenge: { select: { code: true, title: true } },
-      _count: { select: { ideas: true } },
+      _count: { select: { ideas: true, businessChallengeLinks: true } },
     },
     orderBy: { launchDate: 'desc' },
   });
@@ -204,10 +203,11 @@ async function getCampaignsDashboard(f: DashFilters) {
       total: campaigns.length,
       open: campaigns.filter(c => c.status === 'مفتوح').length,
       closed: campaigns.filter(c => c.status === 'مغلق').length,
+      challengesCovered: campaigns.reduce((s, c) => s + (c._count?.businessChallengeLinks || 0), 0),
       totalSubmissions: campaigns.reduce((s, c) => s + (c._count?.ideas || 0), 0),
     },
     charts: {
-      byCategory: countByField(campaigns, 'category'),
+      byMethod: countByField(campaigns, 'deliveryMethod'),
       byStatus: countByField(campaigns, 'status'),
       byTrack: countByField(campaigns, 'track'),
     },
@@ -593,7 +593,7 @@ async function getBusinessChallengesDashboard(f: DashFilters) {
     where,
     include: {
       strategicSource: { select: { code: true, sourceName: true } },
-      _count: { select: { children: true, campaigns: true, pilots: true } },
+      _count: { select: { children: true, campaignLinks: true, pilots: true } },
     },
     orderBy: [{ sequence: 'asc' }, { createdAt: 'desc' }],
   });
@@ -604,7 +604,7 @@ async function getBusinessChallengesDashboard(f: DashFilters) {
   // the priority-normalisation script runs.
   const HIGH = new Set(['عالي', 'عالية', 'عالية جداً', 'مرتفع', 'حرجة']);
   const high = challenges.filter(c => c.priority && HIGH.has(c.priority));
-  const derivedEvents = challenges.reduce((s, c) => s + (c._count?.campaigns || 0), 0);
+  const derivedEvents = challenges.reduce((s, c) => s + (c._count?.campaignLinks || 0), 0);
 
   return {
     kpis: {

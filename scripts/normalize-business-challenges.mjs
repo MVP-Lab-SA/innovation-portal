@@ -7,8 +7,8 @@
  * What it does (idempotent — safe to re-run):
  *  1. Normalises `priority` to the standard Priority lookup values:
  *     عالي / مرتفع → عالية,  متوسط → متوسطة,  منخفض → منخفضة.
- *  2. Seeds the BusinessChallengeStatus lookup with a real lifecycle
- *     (مفتوح → قيد الدراسة → محوّل إلى حملة/فكرة → مغلق / مؤجل).
+ *  2. Seeds the BusinessChallengeStatus lifecycle lookup and the
+ *     CampaignMethod lookup (هاكاثون عام / مغلق / تحدٍ مفتوح / …).
  *
  * Requires DB access — POSTGRES_PRISMA_URL is read from .env.local.
  */
@@ -26,14 +26,10 @@ const PRIORITY_MAP = {
   'منخفض': 'منخفضة',
 };
 
-const STATUS_LIFECYCLE = [
-  'مفتوح',
-  'قيد الدراسة',
-  'محوّل إلى حملة',
-  'محوّل إلى فكرة',
-  'مغلق',
-  'مؤجل',
-];
+const LOOKUPS = {
+  BusinessChallengeStatus: ['مفتوح', 'قيد الدراسة', 'محوّل إلى حملة', 'محوّل إلى فكرة', 'مغلق', 'مؤجل'],
+  CampaignMethod: ['هاكاثون عام', 'هاكاثون مغلق', 'تحدٍ مفتوح', 'مسابقة', 'ورشة عمل', 'دعوة مباشرة'],
+};
 
 async function main() {
   // --- 1. Normalise priority ---------------------------------------------
@@ -50,18 +46,18 @@ async function main() {
   }
   console.log(`✅ Normalised priority on ${priorityUpdates} rows`);
 
-  // --- 2. Seed the status lifecycle lookup -------------------------------
-  let added = 0;
-  for (const value of STATUS_LIFECYCLE) {
-    const exists = await prisma.lookup.findFirst({
-      where: { category: 'BusinessChallengeStatus', value },
-    });
-    if (!exists) {
-      await prisma.lookup.create({ data: { category: 'BusinessChallengeStatus', value } });
-      added += 1;
+  // --- 2. Seed lookups (status lifecycle + campaign methods) -------------
+  for (const [category, values] of Object.entries(LOOKUPS)) {
+    let added = 0;
+    for (const value of values) {
+      const exists = await prisma.lookup.findFirst({ where: { category, value } });
+      if (!exists) {
+        await prisma.lookup.create({ data: { category, value } });
+        added += 1;
+      }
     }
+    console.log(`🏷  ${category} lookup: ${added} new value(s)`);
   }
-  console.log(`🏷  BusinessChallengeStatus lookup: ${added} new value(s)`);
 
   console.log('🎉 Normalisation complete.');
 }

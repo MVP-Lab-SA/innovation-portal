@@ -7,7 +7,7 @@ import { DataTable } from '@/components/DataTable';
 import { useState } from 'react';
 import { useDashboard } from '@/hooks/useData';
 import { DashboardFilters } from '@/components/DashboardFilters';
-import { Trophy, DoorOpen, DoorClosed, Send } from 'lucide-react';
+import { Trophy, DoorOpen, DoorClosed, Send, Puzzle } from 'lucide-react';
 
 export default function CampaignsDashboard() {
   const [filters, setFilters] = useState<Record<string, string>>({});
@@ -25,15 +25,16 @@ export default function CampaignsDashboard() {
         ]}
         onChange={setFilters}
       />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <KpiCard title="إجمالي الحملات" value={k.total || 0} icon={Trophy} variant="default" loading={loading} />
+        <KpiCard title="تحديات مشمولة" value={k.challengesCovered || 0} icon={Puzzle} variant="info" loading={loading} />
         <KpiCard title="مفتوحة" value={k.open || 0} icon={DoorOpen} variant="success" loading={loading} />
         <KpiCard title="مغلقة" value={k.closed || 0} icon={DoorClosed} variant="neutral" loading={loading} />
         <KpiCard title="إجمالي المقدّمات" value={k.totalSubmissions || 0} icon={Send} variant="info" loading={loading} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <ChartContainer title="الفئات"><BarChartComponent data={c.byCategory || []} horizontal /></ChartContainer>
+        <ChartContainer title="طرق التنفيذ"><BarChartComponent data={c.byMethod || []} horizontal /></ChartContainer>
         <ChartContainer title="الحالات"><DonutChart data={c.byStatus || []} /></ChartContainer>
         <ChartContainer title="المسارات"><DonutChart data={c.byTrack || []} /></ChartContainer>
       </div>
@@ -46,7 +47,7 @@ export default function CampaignsDashboard() {
           { key: 'code', label: 'المعرّف', width: '100px', type: 'badge' },
           { key: 'title', label: 'العنوان' },
           { key: 'track', label: 'المسار', type: 'badge' },
-          { key: 'category', label: 'الفئة', type: 'badge' },
+          { key: 'deliveryMethod', label: 'طريقة التنفيذ', type: 'badge' },
           { key: 'status', label: 'الحالة', type: 'status' },
           { key: 'launchDate', label: 'تاريخ الإطلاق', type: 'date' },
           { key: 'closingDate', label: 'تاريخ الإغلاق', type: 'date' },
