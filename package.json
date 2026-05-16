@@ -26,7 +26,8 @@
     "import:experts": "node scripts/import-experts.mjs",
     "import:initiatives": "node scripts/import-initiatives.mjs",
     "normalize:business-challenges": "node scripts/normalize-business-challenges.mjs",
-    "cleanup:sample-data": "node scripts/cleanup-sample-data.mjs"
+    "cleanup:sample-data": "node scripts/cleanup-sample-data.mjs",
+    "create:campaigns": "node scripts/create-campaigns.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
