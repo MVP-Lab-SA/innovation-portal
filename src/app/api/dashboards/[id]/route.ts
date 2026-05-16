@@ -7,42 +7,97 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
- * Returns aggregated data for each dashboard
+ * Aggregated data per dashboard. Accepts optional filters via query string
+ * (status, category, stage, dateFrom, dateTo) which re-compute KPIs, charts
+ * and lists server-side.
  */
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSessionWithProfile();
   if (!session?.profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const dashboardId = params.id;
+  const sp = new URL(request.url).searchParams;
+  const f: DashFilters = {
+    status: sp.get('status') || undefined,
+    category: sp.get('category') || undefined,
+    stage: sp.get('stage') || undefined,
+    dateFrom: sp.get('dateFrom') || undefined,
+    dateTo: sp.get('dateTo') || undefined,
+  };
 
   try {
     switch (dashboardId) {
       case 'executive':
         return NextResponse.json(await getExecutiveDashboard());
       case 'ideas':
-        return NextResponse.json(await getIdeasDashboard());
+        return NextResponse.json(await getIdeasDashboard(f));
       case 'challenges':
-        return NextResponse.json(await getChallengesDashboard());
+        return NextResponse.json(await getChallengesDashboard(f));
       case 'sandbox':
-        return NextResponse.json(await getSandboxDashboard());
+        return NextResponse.json(await getSandboxDashboard(f));
       case 'pilots':
-        return NextResponse.json(await getPilotsDashboard());
+        return NextResponse.json(await getPilotsDashboard(f));
       case 'initiatives':
-        return NextResponse.json(await getInitiativesDashboard());
+        return NextResponse.json(await getInitiativesDashboard(f));
       case 'partners':
-        return NextResponse.json(await getPartnersDashboard());
+        return NextResponse.json(await getPartnersDashboard(f));
       case 'risks':
-        return NextResponse.json(await getRisksDashboard());
+        return NextResponse.json(await getRisksDashboard(f));
       case 'metrics':
-        return NextResponse.json(await getMetricsDashboard());
+        return NextResponse.json(await getMetricsDashboard(f));
       case 'communications':
-        return NextResponse.json(await getCommunicationsDashboard());
+        return NextResponse.json(await getCommunicationsDashboard(f));
+      case 'experts':
+        return NextResponse.json(await getExpertsDashboard(f));
+      case 'documents':
+        return NextResponse.json(await getDocumentsDashboard(f));
+      case 'events':
+        return NextResponse.json(await getEventsDashboard(f));
+      case 'cems':
+        return NextResponse.json(await getCemsDashboard(f));
+      case 'strategic-sources':
+        return NextResponse.json(await getStrategicSourcesDashboard(f));
+      case 'sponsorships':
+        return NextResponse.json(await getSponsorshipsDashboard(f));
       default:
         return NextResponse.json({ error: 'unknown_dashboard' }, { status: 404 });
     }
   } catch (err) {
     return respondError(err, { code: 'dashboard_failed' });
   }
+}
+
+// ============================================================
+// FILTERS
+// ============================================================
+
+interface DashFilters {
+  status?: string;
+  category?: string;
+  stage?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+/**
+ * Builds a Prisma `where` from generic filters, mapped to each model's
+ * actual field names. Only mapped keys are applied (whitelist).
+ */
+function buildWhere(
+  f: DashFilters,
+  map: { status?: string; category?: string; stage?: string; date?: string },
+): Record<string, unknown> {
+  const where: Record<string, unknown> = {};
+  if (f.status && map.status) where[map.status] = f.status;
+  if (f.category && map.category) where[map.category] = f.category;
+  if (f.stage && map.stage) where[map.stage] = f.stage;
+  if (map.date && (f.dateFrom || f.dateTo)) {
+    const range: Record<string, Date> = {};
+    if (f.dateFrom) range.gte = new Date(f.dateFrom);
+    if (f.dateTo) range.lte = new Date(f.dateTo);
+    where[map.date] = range;
+  }
+  return where;
 }
 
 // Helper: group array by field
@@ -70,12 +125,12 @@ async function getExecutiveDashboard() {
     prisma.outcomeMetric.findMany({ select: { id: true, status: true, achievementPct: true } }),
     prisma.sandboxApplication.count(),
   ]);
-  
+
   const activeInitiatives = initiatives.filter(i => i.status === 'قيد التنفيذ').length;
   const criticalRisks = risks.filter(r => r.riskLevel === 'حرج' || r.riskLevel === 'عالٍ').length;
   const onTrackMetrics = metrics.filter(m => m.status === 'على المسار' || m.status === 'تجاوز المستهدف').length;
   const activePartners = partners.filter(p => p.partnershipStatus === 'نشطة').length;
-  
+
   return {
     kpis: {
       ideasTotal: ideas.length,
@@ -99,12 +154,14 @@ async function getExecutiveDashboard() {
   };
 }
 
-async function getIdeasDashboard() {
+async function getIdeasDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', category: 'category', stage: 'stage', date: 'submissionDate' });
   const ideas = await prisma.idea.findMany({
+    where,
     include: { submitterCem: true, relatedChallenge: true },
     orderBy: { submissionDate: 'desc' },
   });
-  
+
   return {
     kpis: {
       total: ideas.length,
@@ -122,12 +179,14 @@ async function getIdeasDashboard() {
   };
 }
 
-async function getChallengesDashboard() {
+async function getChallengesDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', category: 'category', date: 'launchDate' });
   const challenges = await prisma.challenge.findMany({
+    where,
     include: { strategicSource: true, _count: { select: { ideas: true } } },
     orderBy: { launchDate: 'desc' },
   });
-  
+
   return {
     kpis: {
       total: challenges.length,
@@ -143,17 +202,19 @@ async function getChallengesDashboard() {
   };
 }
 
-async function getSandboxDashboard() {
+async function getSandboxDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'applicationStatus', category: 'applicationCategory', date: 'submissionDate' });
   const applications = await prisma.sandboxApplication.findMany({
+    where,
     orderBy: { submissionDate: 'desc' },
   });
-  
+
   const total = applications.length;
   const pending = applications.filter(a => (a.applicationStatus || '').includes('قيد المراجعة')).length;
   const approved = applications.filter(a => (a.applicationStatus || '').includes('موافق')).length;
   const duplicates = applications.filter(a => a.applicationCategory === 'متكررة').length;
   const responseRate = total > 0 ? Math.round(((total - pending) / total) * 100) : 0;
-  
+
   return {
     kpis: { total, pending, approved, duplicates, responseRate },
     charts: {
@@ -166,8 +227,9 @@ async function getSandboxDashboard() {
   };
 }
 
-async function getPilotsDashboard() {
-  const pilots = await prisma.pilot.findMany({ orderBy: { startDate: 'desc' } });
+async function getPilotsDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', date: 'startDate' });
+  const pilots = await prisma.pilot.findMany({ where, orderBy: { startDate: 'desc' } });
   return {
     kpis: {
       total: pilots.length,
@@ -180,18 +242,20 @@ async function getPilotsDashboard() {
   };
 }
 
-async function getInitiativesDashboard() {
+async function getInitiativesDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', category: 'category', date: 'startDate' });
   const initiatives = await prisma.initiative.findMany({
+    where,
     include: { owner: true, _count: { select: { milestones: true, tasks: true, partners: true } } },
     orderBy: { startDate: 'desc' },
   });
-  
+
   const budgetTotal = initiatives.reduce((s, i) => s + (Number(i.budgetSar) || 0), 0);
   const actualTotal = initiatives.reduce((s, i) => s + (Number(i.actualSpendSar) || 0), 0);
-  const avgProgress = initiatives.length > 0 
+  const avgProgress = initiatives.length > 0
     ? Math.round(initiatives.reduce((s, i) => s + (i.progress || 0), 0) / initiatives.length)
     : 0;
-  
+
   return {
     kpis: {
       total: initiatives.length,
@@ -211,16 +275,20 @@ async function getInitiativesDashboard() {
   };
 }
 
-async function getPartnersDashboard() {
+async function getPartnersDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'partnershipStatus', category: 'partnerType' });
   const [partners, sponsorships, interactions] = await Promise.all([
-    prisma.partner.findMany({ include: { _count: { select: { sponsorships: true, interactions: true, initiativePartners: true } } } }),
+    prisma.partner.findMany({
+      where,
+      include: { _count: { select: { sponsorships: true, interactions: true, initiativePartners: true } } },
+    }),
     prisma.sponsorship.findMany({ include: { partner: true } }),
     prisma.partnerInteraction.findMany({ include: { partner: true }, orderBy: { interactionDate: 'desc' }, take: 20 }),
   ]);
-  
-  const totalSponsorshipValue = sponsorships.reduce((s, sp) => 
+
+  const totalSponsorshipValue = sponsorships.reduce((s, sp) =>
     s + (Number(sp.cashValueSar) || 0) + (Number(sp.inKindValueSar) || 0) + (Number(sp.servicesValueSar) || 0), 0);
-  
+
   return {
     kpis: {
       total: partners.length,
@@ -243,9 +311,10 @@ async function getPartnersDashboard() {
   };
 }
 
-async function getRisksDashboard() {
-  const risks = await prisma.risk.findMany({ orderBy: { riskScore: 'desc' } });
-  
+async function getRisksDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', category: 'category', date: 'identifiedDate' });
+  const risks = await prisma.risk.findMany({ where, orderBy: { riskScore: 'desc' } });
+
   return {
     kpis: {
       total: risks.length,
@@ -263,24 +332,21 @@ async function getRisksDashboard() {
   };
 }
 
-async function getMetricsDashboard() {
-  const metrics = await prisma.outcomeMetric.findMany();
-  
+async function getMetricsDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', category: 'category', date: 'measurementDate' });
+  const metrics = await prisma.outcomeMetric.findMany({ where });
+
   const onTrack = metrics.filter(m => m.status === 'على المسار').length;
   const exceeded = metrics.filter(m => m.status === 'تجاوز المستهدف').length;
   const atRisk = metrics.filter(m => m.status === 'في خطر').length;
   const offTrack = metrics.filter(m => m.status === 'خارج المسار').length;
-  
+
   const avgAchievement = metrics.length > 0
     ? Math.round(metrics.reduce((s, m) => s + (Number(m.achievementPct) || 0), 0) / metrics.length)
     : 0;
-  
+
   return {
-    kpis: {
-      total: metrics.length,
-      onTrack, exceeded, atRisk, offTrack,
-      avgAchievement,
-    },
+    kpis: { total: metrics.length, onTrack, exceeded, atRisk, offTrack, avgAchievement },
     charts: {
       byStatus: countByField(metrics, 'status'),
       byCategory: countByField(metrics, 'category'),
@@ -289,12 +355,13 @@ async function getMetricsDashboard() {
   };
 }
 
-async function getCommunicationsDashboard() {
-  const comms = await prisma.communication.findMany({ orderBy: { publishDate: 'desc' } });
-  
+async function getCommunicationsDashboard(f: DashFilters) {
+  const where = buildWhere(f, { category: 'channel', date: 'publishDate' });
+  const comms = await prisma.communication.findMany({ where, orderBy: { publishDate: 'desc' } });
+
   const totalReach = comms.reduce((s, c) => s + (c.reach || 0), 0);
   const totalEngagement = comms.reduce((s, c) => s + (c.engagement || 0), 0);
-  
+
   return {
     kpis: {
       total: comms.length,
@@ -307,5 +374,118 @@ async function getCommunicationsDashboard() {
       byAudience: countByField(comms, 'audience'),
     },
     list: comms,
+  };
+}
+
+// ============================================================
+// ANALYTICS DASHBOARDS (entities without a prior dashboard)
+// ============================================================
+
+async function getExpertsDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', category: 'category' });
+  const experts = await prisma.expert.findMany({ where, orderBy: { createdAt: 'desc' } });
+  return {
+    kpis: {
+      total: experts.length,
+      active: experts.filter(e => e.status === 'نشط').length,
+      categories: new Set(experts.map(e => e.category).filter(Boolean)).size,
+    },
+    charts: {
+      byCategory: countByField(experts, 'category'),
+      byStatus: countByField(experts, 'status'),
+    },
+    list: experts,
+  };
+}
+
+async function getDocumentsDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', category: 'documentType', date: 'uploadDate' });
+  const documents = await prisma.document.findMany({ where, orderBy: { uploadDate: 'desc' } });
+  return {
+    kpis: {
+      total: documents.length,
+      approved: documents.filter(d => d.status === 'معتمد').length,
+      draft: documents.filter(d => d.status === 'مسودة').length,
+    },
+    charts: {
+      byType: countByField(documents, 'documentType'),
+      byStatus: countByField(documents, 'status'),
+    },
+    list: documents,
+  };
+}
+
+async function getEventsDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', category: 'eventType', date: 'startDate' });
+  const events = await prisma.calendarEvent.findMany({ where, orderBy: { startDate: 'desc' } });
+  const now = new Date();
+  return {
+    kpis: {
+      total: events.length,
+      upcoming: events.filter(e => e.startDate && new Date(e.startDate) >= now).length,
+      attendees: events.reduce((s, e) => s + (e.attendeeCount || 0), 0),
+    },
+    charts: {
+      byType: countByField(events, 'eventType'),
+      byStatus: countByField(events, 'status'),
+    },
+    list: events,
+  };
+}
+
+async function getCemsDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', category: 'innovationField' });
+  const cems = await prisma.cem.findMany({ where, orderBy: { createdAt: 'desc' } });
+  return {
+    kpis: {
+      total: cems.length,
+      active: cems.filter(c => c.status === 'نشط').length,
+      fields: new Set(cems.map(c => c.innovationField).filter(Boolean)).size,
+    },
+    charts: {
+      byField: countByField(cems, 'innovationField'),
+      byStatus: countByField(cems, 'status'),
+    },
+    list: cems,
+  };
+}
+
+async function getStrategicSourcesDashboard(f: DashFilters) {
+  const where = buildWhere(f, { category: 'sourceType', date: 'publicationDate' });
+  const sources = await prisma.strategicSource.findMany({ where, orderBy: { createdAt: 'desc' } });
+  return {
+    kpis: {
+      total: sources.length,
+      highRelevance: sources.filter(s => s.relevance === 'عالية' || s.relevance === 'عالية جداً').length,
+      types: new Set(sources.map(s => s.sourceType).filter(Boolean)).size,
+    },
+    charts: {
+      byType: countByField(sources, 'sourceType'),
+      byRelevance: countByField(sources, 'relevance'),
+    },
+    list: sources,
+  };
+}
+
+async function getSponsorshipsDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', category: 'sponsorshipType', date: 'startDate' });
+  const sponsorships = await prisma.sponsorship.findMany({
+    where,
+    include: { partner: { select: { code: true, partnerName: true } } },
+    orderBy: { startDate: 'desc' },
+  });
+  const totalValue = sponsorships.reduce((s, sp) =>
+    s + (Number(sp.cashValueSar) || 0) + (Number(sp.inKindValueSar) || 0) + (Number(sp.servicesValueSar) || 0), 0);
+  return {
+    kpis: {
+      total: sponsorships.length,
+      active: sponsorships.filter(s => s.status === 'نشطة').length,
+      totalValueSar: totalValue,
+    },
+    charts: {
+      byTier: countByField(sponsorships, 'sponsorshipTier'),
+      byStatus: countByField(sponsorships, 'status'),
+    },
+    list: sponsorships,
   };
 }

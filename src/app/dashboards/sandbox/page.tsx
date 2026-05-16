@@ -4,17 +4,27 @@ import { AppShell } from '@/components/AppShell';
 import { KpiCard } from '@/components/KpiCard';
 import { ChartContainer, DonutChart, BarChartComponent } from '@/components/Charts';
 import { DataTable } from '@/components/DataTable';
+import { useState } from 'react';
 import { useDashboard } from '@/hooks/useData';
+import { DashboardFilters } from '@/components/DashboardFilters';
 import { TestTube, CheckCircle2, Clock, RefreshCw, TrendingUp } from 'lucide-react';
 
 export default function SandboxDashboard() {
-  const { data, loading, refresh } = useDashboard<any>('sandbox');
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const { data, loading, refresh } = useDashboard<any>('sandbox', filters);
   const k = data?.kpis || {};
   const c = data?.charts || {};
   const apps = data?.applications || [];
 
   return (
     <AppShell title="لوحة طلبات البيئة التجريبية" subtitle="DASH-04 — متابعة طلبات الساندبوكس" showRefresh onRefresh={refresh} manageEntity="sandbox-applications">
+      <DashboardFilters
+        fields={[
+          { key: 'status', label: 'الحالة', type: 'select', lookupCategory: 'SandboxStatus' },
+          { key: 'category', label: 'التصنيف', type: 'select', lookupCategory: 'SandboxCategory' },
+        ]}
+        onChange={setFilters}
+      />
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <KpiCard title="إجمالي الطلبات" value={k.total || 0} icon={TestTube} variant="default" loading={loading} />
         <KpiCard title="نسبة الاستجابة" value={k.responseRate || 0} suffix="%" icon={TrendingUp} variant="success" loading={loading} />

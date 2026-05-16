@@ -4,17 +4,27 @@ import { AppShell } from '@/components/AppShell';
 import { KpiCard } from '@/components/KpiCard';
 import { ChartContainer, DonutChart, BarChartComponent } from '@/components/Charts';
 import { DataTable } from '@/components/DataTable';
+import { useState } from 'react';
 import { useDashboard } from '@/hooks/useData';
+import { DashboardFilters } from '@/components/DashboardFilters';
 import { Trophy, DoorOpen, DoorClosed, Send } from 'lucide-react';
 
 export default function ChallengesDashboard() {
-  const { data, loading, refresh } = useDashboard<any>('challenges');
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const { data, loading, refresh } = useDashboard<any>('challenges', filters);
   const k = data?.kpis || {};
   const c = data?.charts || {};
   const list = data?.list || [];
 
   return (
     <AppShell title="التحديات والهاكاثونات" subtitle="DASH-03 — إدارة وتحليل التحديات" showRefresh onRefresh={refresh} manageEntity="challenges">
+      <DashboardFilters
+        fields={[
+          { key: 'status', label: 'الحالة', type: 'select', lookupCategory: 'ChallengeStatus' },
+          { key: 'category', label: 'الفئة', type: 'select', lookupCategory: 'ChallengeCategory' },
+        ]}
+        onChange={setFilters}
+      />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <KpiCard title="إجمالي التحديات" value={k.total || 0} icon={Trophy} variant="default" loading={loading} />
         <KpiCard title="مفتوحة" value={k.open || 0} icon={DoorOpen} variant="success" loading={loading} />

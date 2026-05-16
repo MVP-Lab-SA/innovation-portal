@@ -4,11 +4,14 @@ import { AppShell } from '@/components/AppShell';
 import { KpiCard } from '@/components/KpiCard';
 import { ChartContainer, DonutChart } from '@/components/Charts';
 import { DataTable } from '@/components/DataTable';
+import { useState } from 'react';
 import { useDashboard } from '@/hooks/useData';
+import { DashboardFilters } from '@/components/DashboardFilters';
 import { Users, Handshake, DollarSign, MessageCircle } from 'lucide-react';
 
 export default function PartnersDashboard() {
-  const { data, loading, refresh } = useDashboard<any>('partners');
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const { data, loading, refresh } = useDashboard<any>('partners', filters);
   const k = data?.kpis || {};
   const c = data?.charts || {};
   const partners = data?.partners || [];
@@ -16,6 +19,13 @@ export default function PartnersDashboard() {
 
   return (
     <AppShell title="الشركاء والرعايات" subtitle="DASH-07 — إدارة العلاقات والرعايات" showRefresh onRefresh={refresh} manageEntity="partners">
+      <DashboardFilters
+        fields={[
+          { key: 'status', label: 'حالة الشراكة', type: 'select', lookupCategory: 'PartnershipStatus' },
+          { key: 'category', label: 'نوع الشريك', type: 'select', lookupCategory: 'PartnerType' },
+        ]}
+        onChange={setFilters}
+      />
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <KpiCard title="إجمالي الشركاء" value={k.total || 0} icon={Users} variant="default" loading={loading} />
         <KpiCard title="شراكات نشطة" value={k.active || 0} icon={Handshake} variant="success" loading={loading} />

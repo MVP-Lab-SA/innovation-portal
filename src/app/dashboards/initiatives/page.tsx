@@ -4,17 +4,27 @@ import { AppShell } from '@/components/AppShell';
 import { KpiCard } from '@/components/KpiCard';
 import { ChartContainer, DonutChart, BarChartComponent } from '@/components/Charts';
 import { DataTable } from '@/components/DataTable';
+import { useState } from 'react';
 import { useDashboard } from '@/hooks/useData';
+import { DashboardFilters } from '@/components/DashboardFilters';
 import { Briefcase, Play, CheckCircle2, TrendingUp, DollarSign, PiggyBank } from 'lucide-react';
 
 export default function InitiativesDashboard() {
-  const { data, loading, refresh } = useDashboard<any>('initiatives');
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const { data, loading, refresh } = useDashboard<any>('initiatives', filters);
   const k = data?.kpis || {};
   const c = data?.charts || {};
   const list = data?.list || [];
 
   return (
     <AppShell title="محفظة المبادرات" subtitle="DASH-06 — متابعة المبادرات النشطة" showRefresh onRefresh={refresh} manageEntity="initiatives">
+      <DashboardFilters
+        fields={[
+          { key: 'status', label: 'الحالة', type: 'select', lookupCategory: 'InitiativeStatus' },
+          { key: 'category', label: 'الفئة', type: 'select', lookupCategory: 'IdeaCategory' },
+        ]}
+        onChange={setFilters}
+      />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <KpiCard title="إجمالي المبادرات" value={k.total || 0} icon={Briefcase} variant="default" loading={loading} />
         <KpiCard title="قيد التنفيذ" value={k.active || 0} icon={Play} variant="info" loading={loading} />

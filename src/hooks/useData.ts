@@ -6,11 +6,15 @@ function errMessage(e: unknown): string {
   return e instanceof Error ? e.message : 'Unknown error';
 }
 
-export function useDashboard<T = unknown>(dashboardId: string) {
+export function useDashboard<T = unknown>(
+  dashboardId: string,
+  params: Record<string, string> = {},
+) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
+  const paramsKey = JSON.stringify(params);
 
   const fetchData = useCallback(async () => {
     controllerRef.current?.abort();
@@ -19,7 +23,11 @@ export function useDashboard<T = unknown>(dashboardId: string) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/dashboards/${dashboardId}`, { signal: ctrl.signal });
+      const qs = new URLSearchParams();
+      Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
+      const query = qs.toString();
+      const url = `/api/dashboards/${dashboardId}${query ? `?${query}` : ''}`;
+      const res = await fetch(url, { signal: ctrl.signal });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Failed');
@@ -32,7 +40,8 @@ export function useDashboard<T = unknown>(dashboardId: string) {
     } finally {
       if (!ctrl.signal.aborted) setLoading(false);
     }
-  }, [dashboardId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashboardId, paramsKey]);
 
   useEffect(() => {
     fetchData();

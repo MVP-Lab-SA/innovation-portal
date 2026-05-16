@@ -4,17 +4,26 @@ import { AppShell } from '@/components/AppShell';
 import { KpiCard } from '@/components/KpiCard';
 import { ChartContainer, DonutChart } from '@/components/Charts';
 import { DataTable } from '@/components/DataTable';
+import { useState } from 'react';
 import { useDashboard } from '@/hooks/useData';
+import { DashboardFilters } from '@/components/DashboardFilters';
 import { Megaphone, Eye, Heart, BarChart3 } from 'lucide-react';
 
 export default function CommunicationsDashboard() {
-  const { data, loading, refresh } = useDashboard<any>('communications');
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const { data, loading, refresh } = useDashboard<any>('communications', filters);
   const k = data?.kpis || {};
   const c = data?.charts || {};
   const list = data?.list || [];
 
   return (
     <AppShell title="التواصل والإعلام" subtitle="DASH-10 — الحملات والظهور الإعلامي" showRefresh onRefresh={refresh} manageEntity="communications">
+      <DashboardFilters
+        fields={[
+          { key: 'category', label: 'القناة', type: 'select', lookupCategory: 'CommunicationChannel' },
+        ]}
+        onChange={setFilters}
+      />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <KpiCard title="إجمالي الحملات" value={k.total || 0} icon={Megaphone} variant="default" loading={loading} />
         <KpiCard title="إجمالي الوصول" value={k.totalReach || 0} icon={Eye} variant="info" loading={loading} />

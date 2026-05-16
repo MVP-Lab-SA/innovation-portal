@@ -4,17 +4,27 @@ import { AppShell } from '@/components/AppShell';
 import { KpiCard } from '@/components/KpiCard';
 import { ChartContainer, DonutChart, BarChartComponent } from '@/components/Charts';
 import { DataTable } from '@/components/DataTable';
+import { useState } from 'react';
 import { useDashboard } from '@/hooks/useData';
+import { DashboardFilters } from '@/components/DashboardFilters';
 import { Target, TrendingUp, TrendingDown, AlertCircle, Award } from 'lucide-react';
 
 export default function MetricsDashboard() {
-  const { data, loading, refresh } = useDashboard<any>('metrics');
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const { data, loading, refresh } = useDashboard<any>('metrics', filters);
   const k = data?.kpis || {};
   const c = data?.charts || {};
   const list = data?.list || [];
 
   return (
     <AppShell title="المؤشرات والأثر" subtitle="DASH-09 — قياس الأداء والإنجاز" showRefresh onRefresh={refresh} manageEntity="metrics">
+      <DashboardFilters
+        fields={[
+          { key: 'status', label: 'الحالة', type: 'select', lookupCategory: 'MetricStatus' },
+          { key: 'category', label: 'الفئة', type: 'select', lookupCategory: 'MetricCategory' },
+        ]}
+        onChange={setFilters}
+      />
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <KpiCard title="إجمالي المؤشرات" value={k.total || 0} icon={Target} variant="default" loading={loading} />
         <KpiCard title="على المسار" value={k.onTrack || 0} icon={TrendingUp} variant="success" loading={loading} />

@@ -4,17 +4,27 @@ import { AppShell } from '@/components/AppShell';
 import { KpiCard } from '@/components/KpiCard';
 import { ChartContainer, DonutChart, BarChartComponent } from '@/components/Charts';
 import { DataTable } from '@/components/DataTable';
+import { useState } from 'react';
 import { useDashboard } from '@/hooks/useData';
+import { DashboardFilters } from '@/components/DashboardFilters';
 import { AlertTriangle, AlertOctagon, AlertCircle, ShieldCheck } from 'lucide-react';
 
 export default function RisksDashboard() {
-  const { data, loading, refresh } = useDashboard<any>('risks');
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const { data, loading, refresh } = useDashboard<any>('risks', filters);
   const k = data?.kpis || {};
   const c = data?.charts || {};
   const list = data?.list || [];
 
   return (
     <AppShell title="سجل المخاطر" subtitle="DASH-08 — متابعة وإدارة المخاطر" showRefresh onRefresh={refresh} manageEntity="risks">
+      <DashboardFilters
+        fields={[
+          { key: 'status', label: 'الحالة', type: 'select', lookupCategory: 'RiskStatus' },
+          { key: 'category', label: 'الفئة', type: 'select', lookupCategory: 'RiskCategory' },
+        ]}
+        onChange={setFilters}
+      />
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <KpiCard title="إجمالي المخاطر" value={k.total || 0} icon={AlertTriangle} variant="default" loading={loading} />
         <KpiCard title="حرجة" value={k.critical || 0} icon={AlertOctagon} variant="danger" loading={loading} />

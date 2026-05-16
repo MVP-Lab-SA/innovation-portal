@@ -4,17 +4,28 @@ import { AppShell } from '@/components/AppShell';
 import { KpiCard } from '@/components/KpiCard';
 import { ChartContainer, DonutChart, BarChartComponent } from '@/components/Charts';
 import { DataTable } from '@/components/DataTable';
+import { useState } from 'react';
 import { useDashboard } from '@/hooks/useData';
+import { DashboardFilters } from '@/components/DashboardFilters';
 import { Lightbulb, Eye, CheckCircle2, Rocket, AlertCircle } from 'lucide-react';
 
 export default function IdeasDashboard() {
-  const { data, loading, refresh } = useDashboard<any>('ideas');
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const { data, loading, refresh } = useDashboard<any>('ideas', filters);
   const k = data?.kpis || {};
   const c = data?.charts || {};
   const recent = data?.recent || [];
 
   return (
     <AppShell title="قمع الأفكار" subtitle="DASH-02 — تتبع الأفكار من التقديم للتنفيذ" showRefresh onRefresh={refresh} manageEntity="ideas">
+      <DashboardFilters
+        fields={[
+          { key: 'status', label: 'الحالة', type: 'select', options: ['جديدة', 'موافق عليها', 'مرفوضة'] },
+          { key: 'stage', label: 'المرحلة', type: 'select', lookupCategory: 'IdeaStage' },
+          { key: 'category', label: 'القطاع', type: 'select', lookupCategory: 'IdeaCategory' },
+        ]}
+        onChange={setFilters}
+      />
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <KpiCard title="إجمالي الأفكار" value={k.total || 0} icon={Lightbulb} variant="warning" loading={loading} />
         <KpiCard title="أفكار جديدة" value={k.new || 0} icon={Lightbulb} variant="info" loading={loading} />
