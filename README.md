@@ -42,7 +42,7 @@ BLOB_READ_WRITE_TOKEN=...
 ### Required (manual):
 ```bash
 NEON_AUTH_COOKIE_SECRET=<openssl rand -base64 32>
-ADMIN_EMAIL=aj.alqahtani@momah.gov.sa
+ADMIN_EMAIL=admin@momah.gov.sa
 ALLOWED_DOMAINS=momah.gov.sa,gov.sa
 ```
 
@@ -70,7 +70,7 @@ SANITY_API_WRITE_TOKEN=...
 
 ```
 NEON_AUTH_COOKIE_SECRET = <openssl rand -base64 32>
-ADMIN_EMAIL = aj.alqahtani@momah.gov.sa
+ADMIN_EMAIL = admin@momah.gov.sa
 ALLOWED_DOMAINS = momah.gov.sa,gov.sa
 ```
 

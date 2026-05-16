@@ -5,65 +5,12 @@ loadEnvConfig(process.cwd());
 
 const prisma = new PrismaClient();
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'aj.alqahtani@momah.gov.sa';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-
-async function seedAuthAdmin() {
-  const authBaseUrl = process.env.NEON_AUTH_BASE_URL;
-  if (!authBaseUrl) {
-    console.warn('⚠️ NEON_AUTH_BASE_URL is not set; skipping auth account bootstrap.');
-    return;
-  }
-
-  const origin = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-  const signUpUrl = `${authBaseUrl.replace(/\/$/, '')}/sign-up/email`;
-
-  try {
-    const response = await fetch(signUpUrl, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        origin,
-      },
-      body: JSON.stringify({
-        email: ADMIN_EMAIL,
-        password: ADMIN_PASSWORD,
-        name: 'المسؤول',
-      }),
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      if (/already exists|duplicate|already registered/i.test(body)) {
-        console.log(`ℹ️ Auth account already exists for ${ADMIN_EMAIL}`);
-        return;
-      }
-      throw new Error(`Auth signup failed (${response.status}): ${body}`);
-    }
-
-    console.log(`✅ Auth account created for ${ADMIN_EMAIL}`);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (/already exists|duplicate|already registered/i.test(message)) {
-      console.log(`ℹ️ Auth account already exists for ${ADMIN_EMAIL}`);
-      return;
-    }
-    throw error;
-  }
-}
-
-async function markAuthAdminVerified() {
-  const updated = await prisma.$executeRaw`
-    UPDATE neon_auth."user"
-    SET "emailVerified" = true
-    WHERE lower(email) = lower(${ADMIN_EMAIL})
-  `;
-  if (updated > 0) {
-    console.log(`✅ Auth account verified: ${ADMIN_EMAIL}`);
-  } else {
-    console.warn(`⚠️ Auth account not found to verify: ${ADMIN_EMAIL}`);
-  }
-}
+// Bootstrap admin. Authentication is email OTP via Neon Auth — there is NO
+// password to seed. We only pre-create the local User profile row with role
+// ADMIN; on that account's first OTP sign-in, src/lib/auth.ts matches it by
+// email. ADMIN_EMAIL must be provided via the environment — no hardcoded
+// default (avoids leaking a real person's email into a public repo).
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
 
 const LOOKUPS: Record<string, string[]> = {
   Departments: ['الإدارة العليا', 'إدارة الابتكار', 'الإدارة المالية', 'الشؤون القانونية', 'الموارد البشرية', 'تقنية المعلومات', 'العلاقات العامة'],
@@ -479,20 +426,21 @@ async function main() {
   
   console.log(`✅ Seeded ${total} lookup values across ${Object.keys(LOOKUPS).length} categories`);
 
-  await seedAuthAdmin();
-  await markAuthAdminVerified();
-  
-  await prisma.user.upsert({
-    where: { email: ADMIN_EMAIL },
-    update: { role: 'ADMIN', active: true },
-    create: {
-      email: ADMIN_EMAIL,
-      name: 'المسؤول',
-      role: 'ADMIN',
-      active: true,
-    },
-  });
-  console.log(`✅ Admin user prepared: ${ADMIN_EMAIL}`);
+  if (ADMIN_EMAIL) {
+    await prisma.user.upsert({
+      where: { email: ADMIN_EMAIL },
+      update: { role: 'ADMIN', active: true },
+      create: {
+        email: ADMIN_EMAIL,
+        name: 'المسؤول',
+        role: 'ADMIN',
+        active: true,
+      },
+    });
+    console.log(`✅ Admin user prepared: ${ADMIN_EMAIL} (signs in via email OTP)`);
+  } else {
+    console.warn('⚠️ ADMIN_EMAIL not set — skipping admin user. Set ADMIN_EMAIL in the environment and re-run, otherwise the first sign-in will only get VIEWER.');
+  }
 
   // Seed relationship tables with relevant data
   await seedRelationshipTables();

@@ -5,7 +5,7 @@ const ALLOWED_DOMAINS = (process.env.ALLOWED_DOMAINS || 'momah.gov.sa,gov.sa')
   .split(',').map(d => d.trim().toLowerCase()).filter(Boolean);
 const ALLOWED_EMAILS = (process.env.ALLOWED_EMAILS || '')
   .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'aj.alqahtani@momah.gov.sa').toLowerCase();
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
 
 const NEON_AUTH_BASE_URL = process.env.NEON_AUTH_BASE_URL || '';
 const NEON_AUTH_COOKIE_SECRET = process.env.NEON_AUTH_COOKIE_SECRET || process.env.NEXTAUTH_SECRET || '';
@@ -27,17 +27,22 @@ if (IS_PRODUCTION && !IS_BUILD) {
   }
 }
 
-// Stable fallback so the module always initializes. In production this should
-// never be relied on long-term — operators must set NEON_AUTH_COOKIE_SECRET.
-// Using a deterministic fallback avoids cross-instance random-secret mismatch
-// (login loops) when a secret is missing.
-const FALLBACK_COOKIE_SECRET = NEON_AUTH_COOKIE_SECRET
-  || `fallback-${NEON_AUTH_BASE_URL || 'innovation-portal'}-set-NEON_AUTH_COOKIE_SECRET`;
+// Cookie secret. When NEON_AUTH_COOKIE_SECRET is unset we fall back to a
+// RANDOM, per-process value (edge-safe — no Node crypto, since middleware
+// imports this module on the Edge runtime). Rationale:
+//   - dev / build: single process, works fine.
+//   - prod with a missing secret: each serverless instance generates its own
+//     secret, so sessions can't validate across instances — a visible login
+//     loop. That fail-closed behavior is correct: a predictable/deterministic
+//     fallback would let anyone reading this (public) repo forge admin cookies.
+// Operators MUST set NEON_AUTH_COOKIE_SECRET in production (>=32 chars).
+const COOKIE_SECRET = NEON_AUTH_COOKIE_SECRET
+  || Array.from({ length: 4 }, () => Math.random().toString(36).slice(2)).join('');
 
 export const auth = createNeonAuth({
   baseUrl: NEON_AUTH_BASE_URL,
   cookies: {
-    secret: NEON_AUTH_COOKIE_SECRET || FALLBACK_COOKIE_SECRET,
+    secret: COOKIE_SECRET,
   },
 });
 
