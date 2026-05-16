@@ -314,11 +314,26 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
       searchFields: ['code', 'name'],
       detailInclude: {
         businessChallenge: { select: { code: true, title: true } },
+        sandboxApplications: { select: { id: true, code: true, solutionName: true, applicationStatus: true } },
       },
     },
     arabicName: 'التجارب التشغيلية',
   },
-  'sandbox-applications': { model: 'sandboxApplication', options: { codePrefix: 'SBX', searchFields: ['code', 'solutionName', 'entityName'] }, arabicName: 'طلبات الساندبوكس' },
+  'sandbox-applications': {
+    model: 'sandboxApplication',
+    options: {
+      codePrefix: 'SBX',
+      searchFields: ['code', 'solutionName', 'entityName'],
+      detailInclude: {
+        campaign: { select: { code: true, title: true } },
+        businessChallenge: { select: { code: true, title: true } },
+        pilot: { select: { code: true, name: true, status: true } },
+        idea: { select: { code: true, title: true } },
+        partner: { select: { code: true, partnerName: true } },
+      },
+    },
+    arabicName: 'طلبات الساندبوكس',
+  },
   'evaluations': { model: 'evaluation', options: { codePrefix: 'EVL', searchFields: ['code'] }, arabicName: 'التقييمات' },
   'eval-rubrics': { model: 'evalRubric', options: { codePrefix: 'RUB', searchFields: ['code', 'criterionName'] }, arabicName: 'معايير التقييم' },
   'calendar-events': { model: 'calendarEvent', options: { codePrefix: 'EVT', searchFields: ['code', 'title'] }, arabicName: 'الفعاليات' },
@@ -334,6 +349,7 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
         children: { select: { id: true, code: true, title: true, status: true } },
         campaignLinks: { include: { campaign: { select: { code: true, title: true, status: true } } } },
         pilots: { select: { id: true, code: true, name: true, status: true } },
+        sandboxApplications: { select: { id: true, code: true, solutionName: true, applicationStatus: true } },
       },
     },
     arabicName: 'التحديات وفرص الأعمال',
@@ -346,6 +362,7 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
       detailInclude: {
         businessChallengeLinks: { include: { businessChallenge: { select: { code: true, title: true, status: true } } } },
         ideas: { select: { id: true, code: true, title: true, status: true } },
+        sandboxApplications: { select: { id: true, code: true, solutionName: true, applicationStatus: true } },
         expertAssignments: { include: { expert: { select: { code: true, fullName: true } } } },
       },
     },

@@ -36,11 +36,13 @@ const ADD_RELATION: Record<string, Record<string, { entity: string; parentField:
   campaigns: {
     expertAssignments: { entity: 'expert-challenge-assignments', parentField: 'challengeId' },
     businessChallengeLinks: { entity: 'campaign-business-challenges', parentField: 'campaignId' },
+    sandboxApplications: { entity: 'sandbox-applications', parentField: 'campaignId' },
   },
   'business-challenges': {
     children: { entity: 'business-challenges', parentField: 'parentId' },
     campaignLinks: { entity: 'campaign-business-challenges', parentField: 'businessChallengeId' },
     pilots: { entity: 'pilots', parentField: 'businessChallengeId' },
+    sandboxApplications: { entity: 'sandbox-applications', parentField: 'businessChallengeId' },
   },
 };
 
@@ -67,13 +69,17 @@ const RELATION_LABELS: Record<string, string> = {
   pilots: 'التجارب المرتبطة',
   businessChallenge: 'تحدي الأعمال المرتبط',
   campaign: 'الحملة',
+  sandboxApplications: 'طلبات الساندبوكس',
+  pilot: 'التجربة الناتجة',
+  idea: 'الفكرة',
+  partner: 'الشريك',
 };
 
 /** Pick a human label off a related record — never falls back to a raw ID. */
 function relLabel(r: Row): string {
   const direct =
     r.title ?? r.name ?? r.fullName ?? r.partnerName ?? r.metricName ??
-    r.criterionName ?? r.subject ?? r.sourceName;
+    r.criterionName ?? r.subject ?? r.sourceName ?? r.solutionName;
   if (direct) return String(direct);
   // Dig into a nested relation object (e.g. junction rows carry `expert`/`partner`).
   for (const nk of ['expert', 'partner', 'idea', 'challenge', 'campaign', 'businessChallenge', 'initiative', 'submitterCem']) {

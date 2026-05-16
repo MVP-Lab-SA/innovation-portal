@@ -227,9 +227,10 @@ async function getSandboxDashboard(f: DashFilters) {
   const approved = applications.filter(a => (a.applicationStatus || '').includes('موافق')).length;
   const duplicates = applications.filter(a => a.applicationCategory === 'متكررة').length;
   const responseRate = total > 0 ? Math.round(((total - pending) / total) * 100) : 0;
+  const convertedToPilot = applications.filter(a => a.pilotId).length;
 
   return {
-    kpis: { total, pending, approved, duplicates, responseRate },
+    kpis: { total, pending, approved, duplicates, responseRate, convertedToPilot },
     charts: {
       byStatus: countByField(applications, 'applicationStatus'),
       byDomain: countByField(applications, 'solutionDomain'),

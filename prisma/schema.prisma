@@ -276,6 +276,7 @@ model Idea {
   evaluations         Evaluation[]
   initiatives         Initiative[] @relation("IdeaInitiatives")
   documentLinks       DocumentLink[]
+  sandboxApplications SandboxApplication[]
   
   notes               String?      @db.Text
   createdAt           DateTime     @default(now())
@@ -306,6 +307,7 @@ model Pilot {
   // Relations
   initiatives     Initiative[] @relation("PilotInitiatives")
   documentLinks   DocumentLink[]
+  sandboxApplications SandboxApplication[]
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -352,18 +354,29 @@ model SandboxApplication {
   identifiedRisks         String?      @db.Text
   expectedOutcomes        String?      @db.Text
   
-  // Linked entities
-  linkedChallenge         String?
-  linkedIdeaId            String?
-  registeredPartnerId     String?
-  
+  // Funnel relations — the sandbox is the supply-side intake channel,
+  // converging on a Pilot just like the campaign → idea path.
+  campaignId              String?
+  campaign                Campaign?          @relation(fields: [campaignId], references: [id])
+  businessChallengeId     String?
+  businessChallenge       BusinessChallenge? @relation(fields: [businessChallengeId], references: [id])
+  pilotId                 String?
+  pilot                   Pilot?             @relation(fields: [pilotId], references: [id])
+  ideaId                  String?
+  idea                    Idea?              @relation(fields: [ideaId], references: [id])
+  partnerId               String?
+  partner                 Partner?           @relation(fields: [partnerId], references: [id])
+
   notes                   String?      @db.Text
   createdAt               DateTime     @default(now())
   updatedAt               DateTime     @updatedAt
-  
+
   @@index([applicationStatus])
   @@index([solutionDomain])
   @@index([entityType])
+  @@index([campaignId])
+  @@index([businessChallengeId])
+  @@index([pilotId])
 }
 
 // 08 — Evaluations
@@ -504,6 +517,7 @@ model Campaign {
 
   // Relations
   ideas               Idea[]
+  sandboxApplications SandboxApplication[]
   expertAssignments   ExpertChallengeAssignment[]
   initiatives         Initiative[]    @relation("CampaignInitiatives")
 
@@ -567,6 +581,7 @@ model BusinessChallenge {
   // Campaigns that mobilise this challenge (M:N) + derived pilots
   campaignLinks       CampaignBusinessChallenge[]
   pilots              Pilot[]
+  sandboxApplications SandboxApplication[]
 
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -627,6 +642,7 @@ model Partner {
   sponsorships           Sponsorship[]
   interactions           PartnerInteraction[]
   initiativePartners     InitiativePartner[]
+  sandboxApplications    SandboxApplication[]
   
   notes                  String?               @db.Text
   createdAt              DateTime              @default(now())

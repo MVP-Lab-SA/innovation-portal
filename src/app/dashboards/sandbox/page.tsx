@@ -7,7 +7,7 @@ import { DataTable } from '@/components/DataTable';
 import { useState } from 'react';
 import { useDashboard } from '@/hooks/useData';
 import { DashboardFilters } from '@/components/DashboardFilters';
-import { TestTube, CheckCircle2, Clock, RefreshCw, TrendingUp } from 'lucide-react';
+import { TestTube, CheckCircle2, Clock, RefreshCw, TrendingUp, FlaskConical } from 'lucide-react';
 
 export default function SandboxDashboard() {
   const [filters, setFilters] = useState<Record<string, string>>({});
@@ -25,12 +25,13 @@ export default function SandboxDashboard() {
         ]}
         onChange={setFilters}
       />
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
         <KpiCard title="إجمالي الطلبات" value={k.total || 0} icon={TestTube} variant="default" loading={loading} />
         <KpiCard title="نسبة الاستجابة" value={k.responseRate || 0} suffix="%" icon={TrendingUp} variant="success" loading={loading} />
         <KpiCard title="طلبات متكررة" value={k.duplicates || 0} icon={RefreshCw} variant="warning" loading={loading} />
         <KpiCard title="قيد المراجعة" value={k.pending || 0} icon={Clock} variant="info" loading={loading} />
         <KpiCard title="مقبولة" value={k.approved || 0} icon={CheckCircle2} variant="success" loading={loading} />
+        <KpiCard title="تحوّلت إلى تجارب" value={k.convertedToPilot || 0} icon={FlaskConical} variant="info" loading={loading} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
