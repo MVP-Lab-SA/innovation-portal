@@ -86,6 +86,8 @@ Settings → Deployment Protection → **Standard Protection** → "Only Preview
 
 Deployments → آخر deployment → Redeploy
 
+ملاحظة: أمر البناء في Vercel يقوم بتنفيذ `prisma db push` قبل `next build` حتى يتم إنشاء جداول Prisma في قاعدة الإنتاج. بدون ذلك قد ينجح تسجيل الدخول في Neon Auth لكن يفشل دخول التطبيق لأن جدول `User` غير موجود بعد. أمّا البناء المحلي فيبقى على `prisma generate && next build` كما هو.
+
 ---
 
 ## 🔐 نظام الصلاحيات (RBAC)
