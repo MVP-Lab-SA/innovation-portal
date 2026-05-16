@@ -9,6 +9,7 @@ import {
   LayoutDashboard, Lightbulb, Trophy, TestTube, FlaskConical,
   Briefcase, Users, AlertTriangle, Target, Megaphone,
   ChevronLeft, Sparkles, Settings, Database, ChevronDown, History,
+  KanbanSquare,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -47,7 +48,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         </Link>
       </div>
 
-      <div className="px-3 pt-4">
+      <div className="px-3 pt-4 space-y-1">
         <Link href="/" className={cn(
           'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
           pathname === '/' ? 'bg-ministry-green text-white shadow-soft'
@@ -55,6 +56,14 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         )}>
           <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
           {!collapsed && <span>الرئيسية</span>}
+        </Link>
+        <Link href="/tasks" className={cn(
+          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+          pathname === '/tasks' ? 'bg-ministry-green text-white shadow-soft'
+            : 'text-text-secondary hover:bg-ministry-green-soft hover:text-ministry-green-deep'
+        )} title={collapsed ? 'لوحة المهام' : undefined}>
+          <KanbanSquare className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && <span>لوحة المهام</span>}
         </Link>
       </div>
 
