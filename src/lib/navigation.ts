@@ -12,6 +12,12 @@ import {
   Settings,
   Database,
   History,
+  GraduationCap,
+  FileText,
+  CalendarDays,
+  Sparkles,
+  Compass,
+  Gift,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -35,6 +41,12 @@ export const DASHBOARDS: NavItem[] = [
   { id: 'DASH-08', title: 'سجل المخاطر', description: 'متابعة المخاطر', href: '/dashboards/risks', icon: AlertTriangle, color: 'text-red-600' },
   { id: 'DASH-09', title: 'المؤشرات والأثر', description: 'KPIs وقياس الأداء', href: '/dashboards/metrics', icon: Target, color: 'text-emerald-600' },
   { id: 'DASH-10', title: 'التواصل والإعلام', description: 'الحملات والظهور', href: '/dashboards/communications', icon: Megaphone, color: 'text-pink-600' },
+  { id: 'DASH-11', title: 'شبكة الخبراء', description: 'تحليل الخبراء', href: '/dashboards/experts', icon: GraduationCap, color: 'text-indigo-600' },
+  { id: 'DASH-12', title: 'مكتبة الوثائق', description: 'الوثائق والملفات', href: '/dashboards/documents', icon: FileText, color: 'text-slate-600' },
+  { id: 'DASH-13', title: 'الفعاليات والتقويم', description: 'تحليل الفعاليات', href: '/dashboards/events', icon: CalendarDays, color: 'text-rose-600' },
+  { id: 'DASH-14', title: 'المبتكرون', description: 'المبتكرون والأفراد', href: '/dashboards/cems', icon: Sparkles, color: 'text-amber-600' },
+  { id: 'DASH-15', title: 'المصادر الاستراتيجية', description: 'مصادر التحديات', href: '/dashboards/strategic-sources', icon: Compass, color: 'text-teal-600' },
+  { id: 'DASH-16', title: 'الرعايات', description: 'رعايات الشركاء', href: '/dashboards/sponsorships', icon: Gift, color: 'text-fuchsia-600' },
 ];
 
 export const ADMIN_ITEMS: NavItem[] = [
