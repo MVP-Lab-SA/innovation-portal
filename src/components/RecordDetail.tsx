@@ -26,6 +26,8 @@ function isPlainObject(v: unknown): v is Row {
  */
 const APPROVAL_FLOWS: Record<string, { field: string; approve: string; reject: string }> = {
   ideas: { field: 'status', approve: 'موافق عليها', reject: 'مرفوضة' },
+  // Approving a sandbox application also auto-creates a linked Pilot (see runWorkflow).
+  'sandbox-applications': { field: 'applicationStatus', approve: 'موافق عليها', reject: 'مرفوضة' },
 };
 
 /**

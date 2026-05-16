@@ -22,6 +22,9 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "import:business-challenges": "node scripts/import-business-challenges.mjs",
+    "import:sandbox-applications": "node scripts/import-sandbox-applications.mjs",
+    "import:experts": "node scripts/import-experts.mjs",
+    "import:initiatives": "node scripts/import-initiatives.mjs",
     "normalize:business-challenges": "node scripts/normalize-business-challenges.mjs"
   },
   "dependencies": {
