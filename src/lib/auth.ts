@@ -5,7 +5,7 @@ const ALLOWED_DOMAINS = (process.env.ALLOWED_DOMAINS || 'momah.gov.sa,gov.sa')
   .split(',').map(d => d.trim().toLowerCase()).filter(Boolean);
 const ALLOWED_EMAILS = (process.env.ALLOWED_EMAILS || '')
   .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase();
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'aj.alqahtani@momah.gov.sa').toLowerCase();
 
 const NEON_AUTH_BASE_URL = process.env.NEON_AUTH_BASE_URL || '';
 const NEON_AUTH_COOKIE_SECRET = process.env.NEON_AUTH_COOKIE_SECRET || process.env.NEXTAUTH_SECRET || '';
@@ -27,11 +27,12 @@ if (IS_PRODUCTION && !IS_BUILD) {
   }
 }
 
-// Stable per-process random fallback so the module always initializes. In
-// production this is only reached when the operator forgot to set the env
-// var; the critical-config logs above will explain the misconfig.
+// Stable fallback so the module always initializes. In production this should
+// never be relied on long-term — operators must set NEON_AUTH_COOKIE_SECRET.
+// Using a deterministic fallback avoids cross-instance random-secret mismatch
+// (login loops) when a secret is missing.
 const FALLBACK_COOKIE_SECRET = NEON_AUTH_COOKIE_SECRET
-  || `fallback-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+  || `fallback-${NEON_AUTH_BASE_URL || 'innovation-portal'}-set-NEON_AUTH_COOKIE_SECRET`;
 
 export const auth = createNeonAuth({
   baseUrl: NEON_AUTH_BASE_URL,
