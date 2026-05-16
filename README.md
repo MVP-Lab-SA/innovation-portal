@@ -90,6 +90,54 @@ Deployments → آخر deployment → Redeploy
 
 ---
 
+## 🧪 اختبارات الدخان (Smoke)
+
+لفحص المسارات الأساسية سريعاً:
+
+```bash
+# افتراضياً على localhost:3000
+npm run smoke:routes
+
+# لفحص بيئة أخرى (preview / prod)
+SMOKE_BASE_URL=https://innovation-portal-nine.vercel.app npm run smoke:routes
+```
+
+---
+
+## 🗃️ إدارة ترحيل قاعدة البيانات
+
+الاستخدام الموصى به:
+
+```bash
+# أثناء التطوير
+npm run db:migrate:dev
+
+# فحص حالة الترحيلات
+npm run db:status
+
+# في بيئة النشر (عند توفر migrations)
+npm run db:migrate:deploy
+```
+
+لا تستخدم `db push` مباشرة على قاعدة إنتاج مأهولة إلا بقرار مقصود وبعد نسخة احتياطية.
+
+---
+
+## ✅ جاهزية النشر
+
+قبل أي نشر للإنتاج:
+
+```bash
+npm run check:env
+npm run lint
+npm run build
+SMOKE_BASE_URL=https://<deployment-url> npm run smoke:routes
+```
+
+متطلبات حرجة: `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `POSTGRES_PRISMA_URL`, `POSTGRES_URL_NON_POOLING`, `ADMIN_EMAIL`, `ALLOWED_DOMAINS`.
+
+---
+
 ## 🔐 نظام الصلاحيات (RBAC)
 
 | الإجراء | Admin | Editor | Viewer |

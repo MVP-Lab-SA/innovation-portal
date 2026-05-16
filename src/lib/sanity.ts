@@ -7,11 +7,25 @@ import type { SanityImageSource } from '@sanity/image-url/lib/types/types';
  */
 
 function getProjectId(): string {
-  return process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_PROJECT_ID || '';
+  return (
+    process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ||
+    process.env.SANITY_PROJECT_ID ||
+    process.env.NEXT_PUBLIC_sanity_SANITY_PROJECT_ID ||
+    process.env.sanity_SANITY_API_PROJECT_ID ||
+    process.env.sanity_SANITY_STUDIO_PROJECT_ID ||
+    ''
+  );
 }
 
 function getDataset(): string {
-  return process.env.NEXT_PUBLIC_SANITY_DATASET || process.env.SANITY_DATASET || 'production';
+  return (
+    process.env.NEXT_PUBLIC_SANITY_DATASET ||
+    process.env.SANITY_DATASET ||
+    process.env.NEXT_PUBLIC_sanity_SANITY_DATASET ||
+    process.env.sanity_SANITY_API_DATASET ||
+    process.env.sanity_SANITY_STUDIO_DATASET ||
+    'production'
+  );
 }
 
 function getConfig(): ClientConfig {
@@ -43,7 +57,7 @@ export function getSanityReadClient(): SanityClient {
     _sanityReadClient = createClient({
       ...getConfig(),
       useCdn: false,
-      token: process.env.SANITY_API_READ_TOKEN,
+      token: process.env.SANITY_API_READ_TOKEN || process.env.sanity_SANITY_API_READ_TOKEN,
     });
   }
   return _sanityReadClient;
@@ -56,7 +70,7 @@ export function getSanityWriteClient(): SanityClient {
     _sanityWriteClient = createClient({
       ...getConfig(),
       useCdn: false,
-      token: process.env.SANITY_API_WRITE_TOKEN,
+      token: process.env.SANITY_API_WRITE_TOKEN || process.env.sanity_SANITY_API_WRITE_TOKEN,
     });
   }
   return _sanityWriteClient;

@@ -3,13 +3,21 @@
   "version": "2.0.0",
   "private": true,
   "description": "مركز الابتكار - Vercel + Neon Postgres + Neon Auth + Blob + Sanity",
+  "engines": {
+    "node": ">=20 <24"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
+    "check:env": "node scripts/verify-env.mjs",
+    "smoke:routes": "node scripts/smoke-routes.mjs",
     "db:push": "prisma db push",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:status": "prisma migrate status",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts"
   },

@@ -21,6 +21,11 @@ export function AnnouncementsWidget() {
   const [state, setState] = useState<FetchState>({ status: 'loading', items: [] });
 
   useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_SANITY_PROJECT_ID) {
+      setState({ status: 'unconfigured', items: [] });
+      return;
+    }
+
     const ctrl = new AbortController();
     fetch('/api/sanity?type=announcements', { signal: ctrl.signal })
       .then(async r => {
