@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Lock } from 'lucide-react';
 
@@ -9,10 +10,13 @@ const AuthView = dynamic(
   { ssr: false },
 );
 
-export default function LoginPage() {
+function AuthForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('next') || '/';
+  return <AuthView pathname="sign-in" redirectTo={redirectTo} />;
+}
 
+export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
@@ -35,8 +39,10 @@ export default function LoginPage() {
             </div>
           </div>
           
-          {/* Render auth widget client-only to avoid SSR hydration mismatches. */}
-          <AuthView pathname="sign-in" redirectTo={redirectTo} />
+          {/* Suspense required by Next.js 14 App Router for useSearchParams */}
+          <Suspense fallback={<div className="h-64" />}>
+            <AuthForm />
+          </Suspense>
           
           <div className="mt-6 pt-6 border-t border-border text-center">
             <p className="text-xs text-text-muted">
