@@ -72,30 +72,74 @@ export async function getSessionWithProfile() {
     }
 
     const isFirstAdmin = ADMIN_EMAIL && email === ADMIN_EMAIL;
-    const profile = await prisma.user.upsert({
-      where: { email },
-      update: {
-        lastLoginAt: new Date(),
-        name: session.user.name || undefined,
-        image: session.user.image || undefined,
-        neonAuthId: session.user.id,
-        ...(isFirstAdmin && { role: 'ADMIN', active: true }),
-      },
-      create: {
-        email,
-        name: session.user.name || email.split('@')[0],
-        image: session.user.image,
-        neonAuthId: session.user.id,
-        role: isFirstAdmin ? 'ADMIN' : 'VIEWER',
-        active: true,
-        lastLoginAt: new Date(),
-      },
+    const profile = await syncUserProfile({
+      prisma,
+      email,
+      isFirstAdmin,
+      sessionUser: session.user,
     });
 
     return { session, profile, allowed: true };
   } catch (error) {
     console.error('session_error', error);
     return null;
+  }
+}
+
+async function syncUserProfile({
+  prisma,
+  email,
+  isFirstAdmin,
+  sessionUser,
+}: {
+  prisma: Awaited<typeof import('./prisma')>['prisma'];
+  email: string;
+  isFirstAdmin: boolean | '';
+  sessionUser: {
+    id: string;
+    name?: string | null;
+    image?: string | null;
+  };
+}) {
+  const existing = await prisma.user.findUnique({ where: { email } });
+
+  if (existing) {
+    try {
+      return await prisma.user.update({
+        where: { email },
+        data: {
+          lastLoginAt: new Date(),
+          name: sessionUser.name || existing.name || undefined,
+          image: sessionUser.image || existing.image || undefined,
+          neonAuthId: existing.neonAuthId || sessionUser.id,
+          ...(isFirstAdmin && { role: 'ADMIN', active: true }),
+        },
+      });
+    } catch (error) {
+      console.warn('profile_sync_update_failed', { email, error });
+      return existing;
+    }
+  }
+
+  try {
+    return await prisma.user.create({
+      data: {
+        email,
+        name: sessionUser.name || email.split('@')[0],
+        image: sessionUser.image,
+        neonAuthId: sessionUser.id,
+        role: isFirstAdmin ? 'ADMIN' : 'VIEWER',
+        active: true,
+        lastLoginAt: new Date(),
+      },
+    });
+  } catch (error) {
+    console.warn('profile_sync_create_failed', { email, error });
+    const fallback = await prisma.user.findUnique({ where: { email } });
+    if (fallback) {
+      return fallback;
+    }
+    throw error;
   }
 }
 
