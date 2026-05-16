@@ -1,7 +1,12 @@
 'use client';
 
-import { AuthView } from '@neondatabase/auth-ui';
+import dynamic from 'next/dynamic';
 import { Lock } from 'lucide-react';
+
+const AuthView = dynamic(
+  () => import('@neondatabase/auth-ui').then((m) => m.AuthView),
+  { ssr: false },
+);
 
 export default function LoginPage() {
   return (
@@ -26,7 +31,7 @@ export default function LoginPage() {
             </div>
           </div>
           
-          {/* Neon Auth pre-built sign-in form with Email OTP + Google */}
+          {/* Render auth widget client-only to avoid SSR hydration mismatches. */}
           <AuthView pathname="sign-in" />
           
           <div className="mt-6 pt-6 border-t border-border text-center">
