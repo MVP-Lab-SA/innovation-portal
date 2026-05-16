@@ -21,6 +21,11 @@ const TARGETS: { slug: string; model: string; label: string }[] = [
   { slug: 'experts', model: 'expert', label: 'fullName' },
   { slug: 'employees', model: 'employee', label: 'fullName' },
   { slug: 'cems', model: 'cem', label: 'fullName' },
+  { slug: 'sandbox-applications', model: 'sandboxApplication', label: 'solutionName' },
+  { slug: 'communications', model: 'communication', label: 'title' },
+  { slug: 'metrics', model: 'outcomeMetric', label: 'metricName' },
+  { slug: 'calendar-events', model: 'calendarEvent', label: 'title' },
+  { slug: 'strategic-sources', model: 'strategicSource', label: 'sourceName' },
 ];
 
 type SearchModel = { findMany: (args: unknown) => Promise<Array<Record<string, unknown>>> };

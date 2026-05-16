@@ -32,7 +32,7 @@ export default async function HomePage() {
             مرحباً، {userName} 👋
           </h2>
           <p className="text-white/80 text-base md:text-lg max-w-2xl">
-            استكشف 10 لوحات تحليلية تفاعلية تغطّي كل من الأفكار والتحديات والمبادرات والشراكات.
+            استكشف 19 لوحة تحليلية تفاعلية تغطّي الأفكار والتحديات والمبادرات والشراكات والمزيد.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/dashboards/executive" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-ministry-green-deep font-semibold hover:bg-ministry-green-soft transition-all shadow-medium">
@@ -52,8 +52,8 @@ export default async function HomePage() {
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'لوحة تحليلية', value: '10', icon: LayoutDashboard, color: 'text-ministry-green' },
-          { label: 'جدول بيانات', value: '32', icon: Database, color: 'text-blue-600' },
+          { label: 'لوحة تحليلية', value: '19', icon: LayoutDashboard, color: 'text-ministry-green' },
+          { label: 'جدول بيانات', value: '36', icon: Database, color: 'text-blue-600' },
           { label: 'مؤشر أداء', value: '50+', icon: Activity, color: 'text-purple-600' },
           { label: 'تحديث', value: 'مباشر', icon: Sparkles, color: 'text-amber-600' },
         ].map((stat, idx) => {

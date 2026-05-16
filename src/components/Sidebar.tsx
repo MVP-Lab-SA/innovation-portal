@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Lightbulb, Trophy, TestTube, FlaskConical,
   Briefcase, Users, AlertTriangle, Target, Megaphone,
   ChevronLeft, Sparkles, Settings, Database, ChevronDown, History,
-  KanbanSquare, Search,
+  KanbanSquare, Search, Bell,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -84,6 +84,14 @@ export function Sidebar({ collapsed = false, onToggle, mobileOpen = false, onMob
         )} title={collapsed ? 'البحث الشامل' : undefined}>
           <Search className="w-5 h-5 flex-shrink-0" />
           {!collapsed && <span>البحث الشامل</span>}
+        </Link>
+        <Link href="/notifications" className={cn(
+          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+          pathname === '/notifications' ? 'bg-ministry-green text-white shadow-soft'
+            : 'text-text-secondary hover:bg-ministry-green-soft hover:text-ministry-green-deep'
+        )} title={collapsed ? 'الإشعارات' : undefined}>
+          <Bell className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && <span>الإشعارات</span>}
         </Link>
       </div>
 
