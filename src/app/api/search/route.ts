@@ -13,6 +13,7 @@ const TARGETS: { slug: string; model: string; label: string; extra?: string[] }[
   { slug: 'ideas', model: 'idea', label: 'title', extra: ['description', 'impactExpected'] },
   { slug: 'initiatives', model: 'initiative', label: 'name', extra: ['description'] },
   { slug: 'challenges', model: 'challenge', label: 'title', extra: ['description'] },
+  { slug: 'business-challenges', model: 'businessChallenge', label: 'title', extra: ['domain', 'service', 'impact', 'innovationOpportunity'] },
   { slug: 'tasks', model: 'task', label: 'title', extra: ['description'] },
   { slug: 'milestones', model: 'milestone', label: 'name', extra: ['description'] },
   { slug: 'pilots', model: 'pilot', label: 'name', extra: ['description'] },

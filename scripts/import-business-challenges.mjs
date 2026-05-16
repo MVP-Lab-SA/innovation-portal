@@ -16,10 +16,11 @@
  *
  * Requires DB access — POSTGRES_PRISMA_URL is read from .env.local.
  */
-import { loadEnvConfig } from '@next/env';
+import nextEnv from '@next/env';
 import XLSX from 'xlsx';
 import { PrismaClient } from '@prisma/client';
 
+const { loadEnvConfig } = nextEnv;
 loadEnvConfig(process.cwd());
 const prisma = new PrismaClient();
 

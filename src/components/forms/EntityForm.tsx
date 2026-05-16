@@ -119,10 +119,13 @@ export function EntityForm({ title, fields, initial = {}, entity, isEdit, onSucc
     }
     
     if (f.type === 'select' || f.lookupCategory) {
+      // Keep the current value selectable even when it's outside the lookup
+      // set (e.g. values imported from external spreadsheets).
+      const selectOptions = v && !options.includes(v) ? [v, ...options] : options;
       return (
         <select value={v} onChange={e => set(e.target.value)} className="input-base">
           <option value="">-- اختر --</option>
-          {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          {selectOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
         </select>
       );
     }

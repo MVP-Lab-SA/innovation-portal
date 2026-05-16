@@ -34,6 +34,10 @@ const ADD_RELATION: Record<string, Record<string, { entity: string; parentField:
   ideas: { expertAssignments: { entity: 'idea-expert-assignments', parentField: 'ideaId' } },
   initiatives: { partners: { entity: 'initiative-partners', parentField: 'initiativeId' } },
   challenges: { expertAssignments: { entity: 'expert-challenge-assignments', parentField: 'challengeId' } },
+  'business-challenges': {
+    children: { entity: 'business-challenges', parentField: 'parentId' },
+    challenges: { entity: 'challenges', parentField: 'businessChallengeId' },
+  },
 };
 
 /** Arabic labels for relation section keys (avoids showing raw field names). */
