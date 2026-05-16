@@ -1,6 +1,56 @@
+import { loadEnvConfig } from '@next/env';
 import { PrismaClient } from '@prisma/client';
 
+loadEnvConfig(process.cwd());
+
 const prisma = new PrismaClient();
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'aj.alqahtani@momah.gov.sa';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+
+async function seedAuthAdmin() {
+  const authBaseUrl = process.env.NEON_AUTH_BASE_URL;
+  if (!authBaseUrl) {
+    console.warn('⚠️ NEON_AUTH_BASE_URL is not set; skipping auth account bootstrap.');
+    return;
+  }
+
+  const origin = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const signUpUrl = `${authBaseUrl.replace(/\/$/, '')}/sign-up/email`;
+
+  try {
+    const response = await fetch(signUpUrl, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        origin,
+      },
+      body: JSON.stringify({
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+        name: 'المسؤول',
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      if (/already exists|duplicate|already registered/i.test(body)) {
+        console.log(`ℹ️ Auth account already exists for ${ADMIN_EMAIL}`);
+        return;
+      }
+      throw new Error(`Auth signup failed (${response.status}): ${body}`);
+    }
+
+    console.log(`✅ Auth account created for ${ADMIN_EMAIL}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/already exists|duplicate|already registered/i.test(message)) {
+      console.log(`ℹ️ Auth account already exists for ${ADMIN_EMAIL}`);
+      return;
+    }
+    throw error;
+  }
+}
 
 const LOOKUPS: Record<string, string[]> = {
   Departments: ['الإدارة العليا', 'إدارة الابتكار', 'الإدارة المالية', 'الشؤون القانونية', 'الموارد البشرية', 'تقنية المعلومات', 'العلاقات العامة'],
@@ -71,20 +121,20 @@ async function main() {
   }
   
   console.log(`✅ Seeded ${total} lookup values across ${Object.keys(LOOKUPS).length} categories`);
+
+  await seedAuthAdmin();
   
-  // Create first admin user (will need to log in via Google first)
-  const adminEmail = process.env.ADMIN_EMAIL || 'qahtani1979@gmail.com';
   await prisma.user.upsert({
-    where: { email: adminEmail },
+    where: { email: ADMIN_EMAIL },
     update: { role: 'ADMIN', active: true },
     create: {
-      email: adminEmail,
+      email: ADMIN_EMAIL,
       name: 'المسؤول',
       role: 'ADMIN',
       active: true,
     },
   });
-  console.log(`✅ Admin user prepared: ${adminEmail}`);
+  console.log(`✅ Admin user prepared: ${ADMIN_EMAIL}`);
 }
 
 main()
