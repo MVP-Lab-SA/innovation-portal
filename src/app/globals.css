@@ -46,4 +46,11 @@
 @media print {
   body { background: white; }
   .no-print { display: none !important; }
+  /* Hide chrome: sidebar, sticky header, and anything marked print:hidden */
+  aside,
+  header { display: none !important; }
+  /* Drop the sidebar offset so content uses the full page width */
+  main { margin: 0 !important; }
+  main > div { padding: 0 !important; }
+  .card { box-shadow: none !important; border-color: #e5e7eb !important; break-inside: avoid; }
 }

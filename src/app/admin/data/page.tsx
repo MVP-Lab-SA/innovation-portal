@@ -37,6 +37,20 @@ function AdminDataInner() {
     }
   };
 
+  const handleBulkDelete = async (rows: any[]) => {
+    if (rows.length === 0) return;
+    if (!confirm(`حذف ${rows.length} سجلاً نهائياً؟`)) return;
+    const results = await Promise.allSettled(
+      rows.map(r => fetch(`/api/entities/${selectedEntity}/${r.id}`, { method: 'DELETE' })
+        .then(res => { if (!res.ok) throw new Error(); })),
+    );
+    const ok = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.length - ok;
+    if (ok) toast.success(`تم حذف ${ok} سجل`);
+    if (failed) toast.error(`تعذّر حذف ${failed} سجل`);
+    refresh();
+  };
+
   if (!selectedEntity) {
     return (
       <AppShell title="إدارة البيانات" subtitle="اختر جدولاً لإدارته">
@@ -84,6 +98,7 @@ function AdminDataInner() {
         onAdd={() => { setEditingRow(null); setShowForm(true); }}
         onEdit={(row) => { setEditingRow(row); setShowForm(true); }}
         onDelete={handleDelete}
+        onBulkDelete={handleBulkDelete}
         emptyMessage={`لا توجد سجلات في ${config!.arabicName}. اضغط "إضافة" لإنشاء سجل جديد.`}
       />
 

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Download, ChevronUp, ChevronDown, Inbox, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, Download, ChevronUp, ChevronDown, Inbox, Plus, Edit, Trash2, X } from 'lucide-react';
 import { cn, getStatusVariant, formatDate, formatCurrency } from '@/lib/utils';
 import * as XLSX from 'xlsx';
 
@@ -25,6 +25,8 @@ interface DataTableProps {
   onAdd?: () => void;
   onEdit?: (row: any) => void;
   onDelete?: (row: any) => void;
+  /** When set, a checkbox column + bulk-delete bar appear (admin/editor). */
+  onBulkDelete?: (rows: any[]) => void | Promise<void>;
   canEdit?: boolean;
   canDelete?: boolean;
   /** When set, the first column links to /records/{entitySlug}/{row.id}. */
@@ -34,7 +36,7 @@ interface DataTableProps {
 export function DataTable({
   data, columns, searchable = true, exportable = true, title,
   emptyMessage = 'لا توجد بيانات', pageSize = 10,
-  onAdd, onEdit, onDelete, canEdit, canDelete, entitySlug,
+  onAdd, onEdit, onDelete, onBulkDelete, canEdit, canDelete, entitySlug,
 }: DataTableProps) {
   const [role, setRole] = useState<string | null>(null);
   useEffect(() => {
@@ -47,6 +49,8 @@ export function DataTable({
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
   
   const filtered = useMemo(() => {
     let result = data;
@@ -118,7 +122,37 @@ export function DataTable({
   };
   
   const showActions = !!(onEdit || onDelete);
-  
+  const showSelect = !!onBulkDelete && userCanDelete;
+
+  const toggleRow = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const pageIds = paginated.map(r => String(r.id)).filter(Boolean);
+  const allPageSelected = pageIds.length > 0 && pageIds.every(id => selected.has(id));
+  const toggleAllOnPage = () => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (allPageSelected) pageIds.forEach(id => next.delete(id));
+      else pageIds.forEach(id => next.add(id));
+      return next;
+    });
+  };
+  const handleBulkDelete = async () => {
+    if (!onBulkDelete || selected.size === 0) return;
+    const rows = data.filter(r => selected.has(String(r.id)));
+    setBulkBusy(true);
+    try {
+      await onBulkDelete(rows);
+      setSelected(new Set());
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   return (
     <div className="card">
       {(title || searchable || exportable || onAdd) && (
@@ -154,6 +188,23 @@ export function DataTable({
         </div>
       )}
       
+      {showSelect && selected.size > 0 && (
+        <div className="flex items-center justify-between gap-3 mb-4 p-3 rounded-lg bg-ministry-green-soft border border-ministry-green/20">
+          <span className="text-sm font-medium text-ministry-green-deep">{selected.size} عنصر محدد</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setSelected(new Set())} className="btn-secondary text-xs flex items-center gap-1.5">
+              <X className="w-3.5 h-3.5" />
+              <span>إلغاء التحديد</span>
+            </button>
+            <button onClick={handleBulkDelete} disabled={bulkBusy}
+              className="btn-secondary text-xs flex items-center gap-1.5 text-red-600 disabled:opacity-50">
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>حذف المحدد</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <div className="py-12 flex flex-col items-center justify-center text-text-muted">
           <Inbox className="w-16 h-16 opacity-20 mb-3" />
@@ -166,6 +217,16 @@ export function DataTable({
             <table className="data-table">
               <thead>
                 <tr>
+                  {showSelect && (
+                    <th className="w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={allPageSelected}
+                        onChange={toggleAllOnPage}
+                        aria-label="تحديد الكل"
+                      />
+                    </th>
+                  )}
                   {columns.map(col => (
                     <th key={col.key} style={{ width: col.width }}
                       className="cursor-pointer hover:bg-ministry-green/10 transition-colors select-none"
@@ -182,6 +243,16 @@ export function DataTable({
               <tbody>
                 {paginated.map((row, idx) => (
                   <tr key={row.id || idx}>
+                    {showSelect && (
+                      <td className="text-center">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(String(row.id))}
+                          onChange={() => toggleRow(String(row.id))}
+                          aria-label="تحديد الصف"
+                        />
+                      </td>
+                    )}
                     {columns.map((col, colIdx) => {
                       const linkable = entitySlug && colIdx === 0 && row.id;
                       return (

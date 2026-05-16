@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Settings } from 'lucide-react';
+import { Settings, Printer } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { cn } from '@/lib/utils';
@@ -40,6 +40,14 @@ export function AppShell({ children, title, subtitle, showRefresh, onRefresh, ac
         </Link>
       )}
       {actions}
+      <button
+        onClick={() => window.print()}
+        className="btn-secondary text-sm flex items-center gap-2"
+        title="طباعة"
+      >
+        <Printer className="w-4 h-4" />
+        <span className="hidden sm:inline">طباعة</span>
+      </button>
     </>
   );
 

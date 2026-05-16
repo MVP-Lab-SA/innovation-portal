@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Bell, CheckCheck } from 'lucide-react';
@@ -23,24 +23,31 @@ export function NotificationBell() {
   const [items, setItems] = useState<Notif[]>([]);
   const [unread, setUnread] = useState(0);
 
-  const load = useCallback(async (signal?: AbortSignal) => {
-    try {
-      const res = await fetch('/api/notifications', { signal });
-      if (!res.ok) return;
-      const d = await res.json();
-      setItems(d.items || []);
-      setUnread(d.unread || 0);
-    } catch {
-      /* ignore — best-effort */
-    }
-  }, []);
-
+  // Live updates via Server-Sent Events. The stream pushes a snapshot on
+  // connect and every ~10s, closes after ~50s, and EventSource reconnects
+  // automatically — no manual polling. Falls back to a one-shot fetch if
+  // EventSource isn't available.
   useEffect(() => {
-    const ctrl = new AbortController();
-    load(ctrl.signal);
-    const timer = setInterval(() => load(), 60_000);
-    return () => { ctrl.abort(); clearInterval(timer); };
-  }, [load]);
+    if (typeof EventSource === 'undefined') {
+      fetch('/api/notifications')
+        .then(r => (r.ok ? r.json() : null))
+        .then(d => { if (d) { setItems(d.items || []); setUnread(d.unread || 0); } })
+        .catch(() => {});
+      return;
+    }
+    const es = new EventSource('/api/notifications/stream');
+    es.onmessage = e => {
+      try {
+        const d = JSON.parse(e.data);
+        setItems(d.items || []);
+        setUnread(d.unread || 0);
+      } catch {
+        /* ignore malformed frame */
+      }
+    };
+    // onerror: EventSource retries on its own; nothing to do.
+    return () => es.close();
+  }, []);
 
   const markAll = async () => {
     setItems(its => its.map(i => ({ ...i, read: true })));

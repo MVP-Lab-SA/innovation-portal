@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getSessionWithProfile } from '@/lib/auth';
 import Link from 'next/link';
 import { AppShell } from '@/components/AppShell';
+import { WelcomeModal } from '@/components/WelcomeModal';
 import { DASHBOARDS } from '@/lib/navigation';
 import { LayoutDashboard, Sparkles, Activity, Database, ArrowLeft } from 'lucide-react';
 
@@ -16,6 +17,7 @@ export default async function HomePage() {
   
   return (
     <AppShell title="مركز الابتكار وحلول الأعمال" subtitle="منصة متكاملة لإدارة وتحليل مبادرات الابتكار">
+      <WelcomeModal />
       <div className="card mb-6 relative overflow-hidden bg-gradient-to-l from-ministry-green via-ministry-green-deep to-ministry-green-deep text-white border-0 p-8">
         <div className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-full -translate-x-1/3 -translate-y-1/3" />
         <div className="absolute bottom-0 left-1/3 w-48 h-48 bg-white/5 rounded-full translate-y-1/2" />

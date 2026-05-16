@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Save, Loader2 } from 'lucide-react';
+import { X, Save, Loader2, Upload, FileCheck2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export interface FieldConfig {
   key: string;
   label: string;
-  type?: 'text' | 'textarea' | 'number' | 'date' | 'datetime' | 'email' | 'tel' | 'url' | 'select' | 'currency';
+  type?: 'text' | 'textarea' | 'number' | 'date' | 'datetime' | 'email' | 'tel' | 'url' | 'select' | 'currency' | 'file';
   required?: boolean;
   placeholder?: string;
   options?: string[]; // for select
@@ -30,6 +30,27 @@ export function EntityForm({ title, fields, initial = {}, entity, isEdit, onSucc
   const [values, setValues] = useState<Record<string, any>>(initial);
   const [saving, setSaving] = useState(false);
   const [lookups, setLookups] = useState<Record<string, string[]>>({});
+  const [uploading, setUploading] = useState<string | null>(null);
+
+  const uploadFile = async (key: string, file: File) => {
+    setUploading(key);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error === 'unsupported_content_type' ? 'نوع الملف غير مدعوم' : 'فشل رفع الملف');
+      }
+      const data = await res.json();
+      setValues(v => ({ ...v, [key]: data.url }));
+      toast.success('تم رفع الملف');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'فشل رفع الملف');
+    } finally {
+      setUploading(null);
+    }
+  };
   
   // Load lookups for select fields
   useEffect(() => {
@@ -109,6 +130,31 @@ export function EntityForm({ title, fields, initial = {}, entity, isEdit, onSucc
     if (f.type === 'date' || f.type === 'datetime') {
       const dateValue = v ? new Date(v).toISOString().split('T')[0] : '';
       return <input type="date" value={dateValue} onChange={e => set(e.target.value)} className="input-base" />;
+    }
+
+    if (f.type === 'file') {
+      const isUploading = uploading === f.key;
+      return (
+        <div className="space-y-2">
+          <label className={`btn-secondary inline-flex items-center gap-2 cursor-pointer text-sm ${isUploading ? 'opacity-60 pointer-events-none' : ''}`}>
+            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            <span>{isUploading ? 'جارٍ الرفع...' : 'رفع ملف'}</span>
+            <input
+              type="file"
+              className="hidden"
+              disabled={isUploading}
+              onChange={e => { const file = e.target.files?.[0]; if (file) uploadFile(f.key, file); }}
+            />
+          </label>
+          {v && (
+            <a href={v} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs text-ministry-green-deep hover:underline">
+              <FileCheck2 className="w-3.5 h-3.5" />
+              <span className="truncate">الملف المرفوع</span>
+            </a>
+          )}
+        </div>
+      );
     }
     
     return (

@@ -20,6 +20,7 @@ import {
   Gift,
   ClipboardCheck,
   Flag,
+  MessageCircle,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -51,6 +52,7 @@ export const DASHBOARDS: NavItem[] = [
   { id: 'DASH-16', title: 'الرعايات', description: 'رعايات الشركاء', href: '/dashboards/sponsorships', icon: Gift, color: 'text-fuchsia-600' },
   { id: 'DASH-17', title: 'تقييمات الأفكار', description: 'تحليل التقييمات', href: '/dashboards/evaluations', icon: ClipboardCheck, color: 'text-lime-600' },
   { id: 'DASH-18', title: 'المراحل الرئيسية', description: 'متابعة المراحل', href: '/dashboards/milestones', icon: Flag, color: 'text-sky-600' },
+  { id: 'DASH-19', title: 'تفاعلات الشركاء', description: 'سجل التواصل', href: '/dashboards/partner-interactions', icon: MessageCircle, color: 'text-violet-600' },
 ];
 
 export const ADMIN_ITEMS: NavItem[] = [

@@ -63,6 +63,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         return NextResponse.json(await getEvaluationsDashboard(f));
       case 'milestones':
         return NextResponse.json(await getMilestonesDashboard(f));
+      case 'partner-interactions':
+        return NextResponse.json(await getPartnerInteractionsDashboard(f));
       default:
         return NextResponse.json({ error: 'unknown_dashboard' }, { status: 404 });
     }
@@ -546,5 +548,34 @@ async function getMilestonesDashboard(f: DashFilters) {
       byStatus: countByField(milestones, 'status'),
     },
     list: milestones,
+  };
+}
+
+async function getPartnerInteractionsDashboard(f: DashFilters) {
+  const where = buildWhere(f, { category: 'interactionType', date: 'interactionDate' });
+  const interactions = await prisma.partnerInteraction.findMany({
+    where,
+    include: { partner: { select: { code: true, partnerName: true } } },
+    orderBy: { interactionDate: 'desc' },
+  });
+  const now = new Date();
+  const thisMonth = interactions.filter(i => {
+    if (!i.interactionDate) return false;
+    const d = new Date(i.interactionDate);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
+  const upcomingFollowUps = interactions.filter(
+    i => i.followUpDate != null && new Date(i.followUpDate) >= now,
+  ).length;
+  return {
+    kpis: {
+      total: interactions.length,
+      thisMonth,
+      upcomingFollowUps,
+    },
+    charts: {
+      byType: countByField(interactions, 'interactionType'),
+    },
+    list: interactions,
   };
 }
