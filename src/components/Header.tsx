@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { LogOut, RefreshCw, User, Calendar, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NotificationBell } from './NotificationBell';
 
 interface HeaderProps {
   title?: string;
@@ -81,7 +82,9 @@ export function Header({ title, subtitle, showRefresh = false, onRefresh, action
               <RefreshCw className={cn('w-5 h-5', refreshing && 'animate-spin')} />
             </button>
           )}
-          
+
+          {user && <NotificationBell />}
+
           {user && (
             <div className="relative">
               <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-ministry-green-soft transition-all">

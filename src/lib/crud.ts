@@ -3,6 +3,7 @@ import { getSessionWithProfile, canAccess } from './auth';
 import { prisma } from './prisma';
 import { getEntityValidation } from './entityConfigs';
 import { respondError } from './apiError';
+import { emitForCrud } from './notifications';
 
 interface CrudOptions {
   searchFields?: string[];
@@ -183,6 +184,7 @@ export function createCreateHandler(slug: string, modelName: string, options: Cr
 
       const created = await model.create({ data, include: options.include });
       await writeAuditLog(session.profile.id, 'CREATE', slug, created.id, data, ipFromRequest(request));
+      await emitForCrud(slug, 'CREATE', created);
       return NextResponse.json(created, { status: 201 });
     } catch (err) {
       return respondError(err, { code: 'create_failed' });
@@ -228,12 +230,15 @@ export function createRecordHandlers(slug: string, modelName: string, options: C
         const data = coerceBody(parsed as Record<string, unknown>);
 
         const model = getModel(modelName);
+        const before = (await model.findUnique({ where: { id: params.id } })) as
+          ({ id: string } & Record<string, unknown>) | null;
         const updated = await model.update({
           where: { id: params.id },
           data,
           include: options.include,
         });
         await writeAuditLog(session.profile.id, 'UPDATE', slug, params.id, data, ipFromRequest(request));
+        await emitForCrud(slug, 'UPDATE', updated as { id: string } & Record<string, unknown>, before);
         return NextResponse.json(updated);
       } catch (err) {
         return respondError(err, { code: 'update_failed' });

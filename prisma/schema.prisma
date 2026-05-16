@@ -38,10 +38,28 @@ model User {
   updatedAt     DateTime  @updatedAt
   
   auditLogs     AuditLog[]
-  
+  notifications Notification[]
+
   @@index([email])
   @@index([role])
   @@index([neonAuthId])
+}
+
+// In-app notifications, generated automatically by CRUD events
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // TASK_ASSIGNED | STATUS_CHANGED | RECORD_CREATED
+  title     String
+  body      String?  @db.Text
+  entity    String?  // entity slug, e.g. "tasks"
+  entityId  String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([createdAt])
 }
 
 // Audit log for tracking changes
