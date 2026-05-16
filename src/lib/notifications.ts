@@ -79,7 +79,7 @@ export async function emitForCrud(
     const STATUS_ENTITIES: Record<string, { key: string; label: string }> = {
       'ideas': { key: 'status', label: 'فكرة' },
       'sandbox-applications': { key: 'applicationStatus', label: 'طلب ساندبوكس' },
-      'challenges': { key: 'status', label: 'تحدٍّ' },
+      'campaigns': { key: 'status', label: 'حملة' },
       'initiatives': { key: 'status', label: 'مبادرة' },
     };
     if (STATUS_ENTITIES[entity] && action === 'UPDATE') {

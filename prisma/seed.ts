@@ -36,6 +36,7 @@ const LOOKUPS: Record<string, string[]> = {
   EventStatus: ['مخطط لها', 'قيد التحضير', 'جارية', 'منعقدة', 'ملغاة', 'مؤجلة'],
   ChallengeCategory: ['تقنية', 'بيئية', 'اجتماعية', 'اقتصادية', 'إدارية', 'استراتيجية'],
   ChallengeStatus: ['مخطط له', 'مفتوح', 'مغلق', 'تحت التقييم', 'منتهي', 'ملغى'],
+  BusinessChallengeStatus: ['مفتوح', 'قيد الدراسة', 'محوّل إلى حملة', 'محوّل إلى فكرة', 'مغلق', 'مؤجل'],
   CemStatus: ['نشط', 'غير نشط', 'محجوب'],
   EducationLevel: ['ثانوي', 'دبلوم', 'بكالوريوس', 'ماجستير', 'دكتوراه'],
   PartnerType: ['حكومي', 'خاص', 'أكاديمي', 'غير ربحي', 'دولي'],
@@ -71,7 +72,7 @@ async function seedRelationshipTables() {
   // Get sample data from existing tables
   const ideas = await prisma.idea.findMany({ take: 10 });
   const experts = await prisma.expert.findMany({ take: 10 });
-  const challenges = await prisma.challenge.findMany({ take: 5 });
+  const challenges = await prisma.campaign.findMany({ take: 5 });
   const events = await prisma.calendarEvent.findMany({ take: 5 });
   const employees = await prisma.employee.findMany({ take: 10 });
   const partners = await prisma.partner.findMany({ take: 8 });

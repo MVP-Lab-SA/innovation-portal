@@ -148,7 +148,7 @@ model Initiative {
   sourceIdeaId        String?
   sourceIdea          Idea?        @relation("IdeaInitiatives", fields: [sourceIdeaId], references: [id])
   sourceChallengeId   String?
-  sourceChallenge     Challenge?   @relation("ChallengeInitiatives", fields: [sourceChallengeId], references: [id])
+  sourceChallenge     Campaign?    @relation("CampaignInitiatives", fields: [sourceChallengeId], references: [id])
   sourcePilotId       String?
   sourcePilot         Pilot?       @relation("PilotInitiatives", fields: [sourcePilotId], references: [id])
   
@@ -269,7 +269,7 @@ model Idea {
   decisionDate        DateTime?
   impactExpected      String?      // الأثر المتوقع
   relatedChallengeId  String?
-  relatedChallenge    Challenge?   @relation(fields: [relatedChallengeId], references: [id])
+  relatedChallenge    Campaign?    @relation(fields: [relatedChallengeId], references: [id])
   
   // Relations
   expertAssignments   IdeaExpertAssignment[]
@@ -298,15 +298,20 @@ model Pilot {
   budgetSar       Decimal?     @db.Decimal(15, 2)
   successCriteria String?      @db.Text
   outcome         String?      @db.Text
-  
+
+  // The business challenge this pilot traces back to
+  businessChallengeId String?
+  businessChallenge   BusinessChallenge? @relation(fields: [businessChallengeId], references: [id])
+
   // Relations
   initiatives     Initiative[] @relation("PilotInitiatives")
   documentLinks   DocumentLink[]
-  
+
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-  
+
   @@index([status])
+  @@index([businessChallengeId])
 }
 
 // 07b — Sandbox Applications (lookup-rich)
@@ -462,20 +467,24 @@ model StrategicSource {
   publicationDate DateTime?
   relevance       String?    // الأهمية
 
-  challenges         Challenge[]
+  campaigns          Campaign[]
   businessChallenges BusinessChallenge[]
 
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 }
 
-// 12 — Challenges
-model Challenge {
+// 12 — Campaigns
+// A time-boxed release wave that orchestrates a business challenge into a
+// track (R&D / innovation) and into hackathons/competitions. Physically
+// still the "Challenge" table (@@map) so the rename needs no migration.
+model Campaign {
   id                  String          @id @default(cuid())
   code                String          @unique // CHL-001
-  title               String          // عنوان التحدي
+  title               String          // عنوان الحملة
   description         String?         @db.Text
-  category            String?         // فئة التحدي
+  category            String?         // فئة الحملة
+  track               String?         // مسار الحملة (بحث وتطوير / ابتكار)
   status              String?         @default("مخطط له")
   launchDate          DateTime?
   closingDate         DateTime?
@@ -484,22 +493,23 @@ model Challenge {
   actualOutcome       String?         @db.Text
   submissionCount     Int?            @default(0)
   winnerCount         Int?            @default(0)
-  
+
   strategicSourceId   String?
   strategicSource     StrategicSource? @relation(fields: [strategicSourceId], references: [id])
 
-  // Derived from a business challenge / opportunity
+  // The business challenge this campaign releases
   businessChallengeId String?
   businessChallenge   BusinessChallenge? @relation(fields: [businessChallengeId], references: [id])
 
   // Relations
   ideas               Idea[]
   expertAssignments   ExpertChallengeAssignment[]
-  initiatives         Initiative[]    @relation("ChallengeInitiatives")
+  initiatives         Initiative[]    @relation("CampaignInitiatives")
 
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
+  @@map("Challenge")
   @@index([status])
   @@index([category])
   @@index([businessChallengeId])
@@ -540,8 +550,9 @@ model BusinessChallenge {
   parent              BusinessChallenge?  @relation("BusinessChallengeHierarchy", fields: [parentId], references: [id])
   children            BusinessChallenge[] @relation("BusinessChallengeHierarchy")
 
-  // Derived events
-  challenges          Challenge[]
+  // Derived campaigns / pilots
+  campaigns           Campaign[]
+  pilots              Pilot[]
 
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -695,13 +706,13 @@ model IdeaExpertAssignment {
   @@index([expertId])
 }
 
-// 15 — Expert-Challenge Assignments
+// 15 — Expert-Campaign Assignments
 model ExpertChallengeAssignment {
   id              String     @id @default(cuid())
   expertId        String
   expert          Expert     @relation(fields: [expertId], references: [id])
   challengeId     String
-  challenge       Challenge  @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  challenge       Campaign   @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   role            String?    // دور الخبير
   assignedDate    DateTime   @default(now())
   

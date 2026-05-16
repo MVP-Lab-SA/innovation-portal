@@ -37,7 +37,7 @@ export interface NavItem {
 export const DASHBOARDS: NavItem[] = [
   { id: 'DASH-01', title: 'اللوحة التنفيذية', description: 'نظرة شاملة', href: '/dashboards/executive', icon: LayoutDashboard, color: 'text-ministry-green' },
   { id: 'DASH-02', title: 'قمع الأفكار', description: 'الأفكار من التقديم للتنفيذ', href: '/dashboards/ideas', icon: Lightbulb, color: 'text-amber-600' },
-  { id: 'DASH-03', title: 'الهاكاثونات والمسابقات', description: 'الفعاليات التنافسية والمبتكرون', href: '/dashboards/challenges', icon: Trophy, color: 'text-purple-600' },
+  { id: 'DASH-03', title: 'الحملات', description: 'موجات إطلاق التحديات ومساراتها', href: '/dashboards/campaigns', icon: Trophy, color: 'text-purple-600' },
   { id: 'DASH-04', title: 'طلبات الساندبوكس', description: 'البيئة التجريبية', href: '/dashboards/sandbox', icon: TestTube, color: 'text-cyan-600' },
   { id: 'DASH-05', title: 'التجارب التشغيلية', description: 'التجارب الميدانية', href: '/dashboards/pilots', icon: FlaskConical, color: 'text-orange-600' },
   { id: 'DASH-06', title: 'محفظة المبادرات', description: 'متابعة المبادرات', href: '/dashboards/initiatives', icon: Briefcase, color: 'text-blue-600' },

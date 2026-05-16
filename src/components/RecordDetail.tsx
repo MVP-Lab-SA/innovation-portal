@@ -33,17 +33,18 @@ const APPROVAL_FLOWS: Record<string, { field: string; approve: string; reject: s
 const ADD_RELATION: Record<string, Record<string, { entity: string; parentField: string }>> = {
   ideas: { expertAssignments: { entity: 'idea-expert-assignments', parentField: 'ideaId' } },
   initiatives: { partners: { entity: 'initiative-partners', parentField: 'initiativeId' } },
-  challenges: { expertAssignments: { entity: 'expert-challenge-assignments', parentField: 'challengeId' } },
+  campaigns: { expertAssignments: { entity: 'expert-challenge-assignments', parentField: 'challengeId' } },
   'business-challenges': {
     children: { entity: 'business-challenges', parentField: 'parentId' },
-    challenges: { entity: 'challenges', parentField: 'businessChallengeId' },
+    campaigns: { entity: 'campaigns', parentField: 'businessChallengeId' },
+    pilots: { entity: 'pilots', parentField: 'businessChallengeId' },
   },
 };
 
 /** Arabic labels for relation section keys (avoids showing raw field names). */
 const RELATION_LABELS: Record<string, string> = {
   submitterCem: 'مقدّم الفكرة',
-  relatedChallenge: 'التحدي المرتبط',
+  relatedChallenge: 'الحملة المرتبطة',
   evaluations: 'التقييمات',
   expertAssignments: 'الخبراء المعيّنون',
   ideaAssignments: 'الأفكار المُسندة',
@@ -58,7 +59,8 @@ const RELATION_LABELS: Record<string, string> = {
   user: 'المستخدم',
   parent: 'التحدي الرئيسي',
   children: 'التحديات الفرعية',
-  challenges: 'الهاكاثونات والمسابقات المشتقة',
+  campaigns: 'الحملات المرتبطة',
+  pilots: 'التجارب المرتبطة',
   businessChallenge: 'تحدي الأعمال المرتبط',
 };
 

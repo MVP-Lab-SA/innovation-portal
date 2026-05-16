@@ -31,8 +31,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         return NextResponse.json(await getExecutiveDashboard());
       case 'ideas':
         return NextResponse.json(await getIdeasDashboard(f));
-      case 'challenges':
-        return NextResponse.json(await getChallengesDashboard(f));
+      case 'campaigns':
+        return NextResponse.json(await getCampaignsDashboard(f));
       case 'sandbox':
         return NextResponse.json(await getSandboxDashboard(f));
       case 'pilots':
@@ -123,11 +123,11 @@ function countByField<T>(arr: T[], field: keyof T): Array<{ name: string; value:
 // ============================================================
 
 async function getExecutiveDashboard() {
-  const [ideas, initiatives, pilots, challenges, partners, risks, metrics, sandbox] = await Promise.all([
+  const [ideas, initiatives, pilots, campaigns, partners, risks, metrics, sandbox] = await Promise.all([
     prisma.idea.findMany({ select: { id: true, status: true, stage: true } }),
     prisma.initiative.findMany({ select: { id: true, status: true, budgetSar: true } }),
     prisma.pilot.count(),
-    prisma.challenge.findMany({ select: { id: true, status: true, category: true } }),
+    prisma.campaign.findMany({ select: { id: true, status: true, category: true } }),
     prisma.partner.findMany({ select: { id: true, partnerType: true, partnershipStatus: true } }),
     prisma.risk.findMany({ select: { id: true, riskLevel: true, status: true } }),
     prisma.outcomeMetric.findMany({ select: { id: true, status: true, achievementPct: true } }),
@@ -145,7 +145,7 @@ async function getExecutiveDashboard() {
       initiativesTotal: initiatives.length,
       activeInitiatives,
       pilotsTotal: pilots,
-      challengesTotal: challenges.length,
+      campaignsTotal: campaigns.length,
       partnersTotal: partners.length,
       activePartners,
       criticalRisks,
@@ -156,7 +156,7 @@ async function getExecutiveDashboard() {
       initiativeStatus: countByField(initiatives, 'status'),
       ideasStage: countByField(ideas, 'stage'),
       partnersType: countByField(partners, 'partnerType'),
-      challengeCategory: countByField(challenges, 'category'),
+      campaignCategory: countByField(campaigns, 'category'),
       risksByLevel: countByField(risks, 'riskLevel'),
     },
   };
@@ -187,26 +187,31 @@ async function getIdeasDashboard(f: DashFilters) {
   };
 }
 
-async function getChallengesDashboard(f: DashFilters) {
+async function getCampaignsDashboard(f: DashFilters) {
   const where = buildWhere(f, { status: 'status', category: 'category', date: 'launchDate' });
-  const challenges = await prisma.challenge.findMany({
+  const campaigns = await prisma.campaign.findMany({
     where,
-    include: { strategicSource: true, _count: { select: { ideas: true } } },
+    include: {
+      strategicSource: true,
+      businessChallenge: { select: { code: true, title: true } },
+      _count: { select: { ideas: true } },
+    },
     orderBy: { launchDate: 'desc' },
   });
 
   return {
     kpis: {
-      total: challenges.length,
-      open: challenges.filter(c => c.status === 'مفتوح').length,
-      closed: challenges.filter(c => c.status === 'مغلق').length,
-      totalSubmissions: challenges.reduce((s, c) => s + (c._count?.ideas || 0), 0),
+      total: campaigns.length,
+      open: campaigns.filter(c => c.status === 'مفتوح').length,
+      closed: campaigns.filter(c => c.status === 'مغلق').length,
+      totalSubmissions: campaigns.reduce((s, c) => s + (c._count?.ideas || 0), 0),
     },
     charts: {
-      byCategory: countByField(challenges, 'category'),
-      byStatus: countByField(challenges, 'status'),
+      byCategory: countByField(campaigns, 'category'),
+      byStatus: countByField(campaigns, 'status'),
+      byTrack: countByField(campaigns, 'track'),
     },
-    list: challenges,
+    list: campaigns,
   };
 }
 
@@ -588,15 +593,18 @@ async function getBusinessChallengesDashboard(f: DashFilters) {
     where,
     include: {
       strategicSource: { select: { code: true, sourceName: true } },
-      _count: { select: { children: true, challenges: true } },
+      _count: { select: { children: true, campaigns: true, pilots: true } },
     },
     orderBy: [{ sequence: 'asc' }, { createdAt: 'desc' }],
   });
 
   const main = challenges.filter(c => c.classification === 'رئيسي' || !c.parentId);
-  const high = challenges.filter(c =>
-    c.priority === 'عالي' || c.priority === 'عالية' || c.priority === 'عالية جداً' || c.priority === 'حرجة');
-  const derivedEvents = challenges.reduce((s, c) => s + (c._count?.challenges || 0), 0);
+  // "High" covers every spelling the source data uses (عالي / عالية / مرتفع)
+  // plus the normalised value, so the KPI stays correct before and after
+  // the priority-normalisation script runs.
+  const HIGH = new Set(['عالي', 'عالية', 'عالية جداً', 'مرتفع', 'حرجة']);
+  const high = challenges.filter(c => c.priority && HIGH.has(c.priority));
+  const derivedEvents = challenges.reduce((s, c) => s + (c._count?.campaigns || 0), 0);
 
   return {
     kpis: {

@@ -18,7 +18,7 @@ export default function ExecutiveDashboard() {
         <KpiCard title="إجمالي الأفكار" value={k.ideasTotal || 0} icon={Lightbulb} variant="warning" loading={loading} />
         <KpiCard title="المبادرات النشطة" value={k.activeInitiatives || 0} icon={Briefcase} variant="default" loading={loading} description={`من ${k.initiativesTotal || 0}`} />
         <KpiCard title="التجارب" value={k.pilotsTotal || 0} icon={FlaskConical} variant="info" loading={loading} />
-        <KpiCard title="التحديات" value={k.challengesTotal || 0} icon={Trophy} variant="info" loading={loading} />
+        <KpiCard title="الحملات" value={k.campaignsTotal || 0} icon={Trophy} variant="info" loading={loading} />
         <KpiCard title="الشركاء النشطون" value={k.activePartners || 0} icon={Users} variant="success" loading={loading} description={`من ${k.partnersTotal || 0}`} />
         <KpiCard title="مخاطر حرجة" value={k.criticalRisks || 0} icon={AlertTriangle} variant="danger" loading={loading} />
         <KpiCard title="مؤشرات على المسار" value={k.onTrackMetrics || 0} icon={Target} variant="success" loading={loading} />
@@ -30,7 +30,7 @@ export default function ExecutiveDashboard() {
           <ChartContainer title="حالات المبادرات" description="التوزيع الحالي"><DonutChart data={c.initiativeStatus || []} /></ChartContainer>
           <ChartContainer title="مراحل الأفكار" description="مسار قمع الأفكار"><BarChartComponent data={c.ideasStage || []} horizontal /></ChartContainer>
           <ChartContainer title="أنواع الشركاء" description="توزيع الشراكات"><DonutChart data={c.partnersType || []} /></ChartContainer>
-          <ChartContainer title="فئات التحديات" description="التصنيف الموضوعي"><BarChartComponent data={c.challengeCategory || []} /></ChartContainer>
+          <ChartContainer title="فئات الحملات" description="التصنيف الموضوعي"><BarChartComponent data={c.campaignCategory || []} /></ChartContainer>
         </div>
         <div className="lg:col-span-1">
           <AnnouncementsWidget />

@@ -307,7 +307,17 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
     },
     arabicName: 'الأفكار',
   },
-  'pilots': { model: 'pilot', options: { codePrefix: 'PIL', searchFields: ['code', 'name'] }, arabicName: 'التجارب التشغيلية' },
+  'pilots': {
+    model: 'pilot',
+    options: {
+      codePrefix: 'PIL',
+      searchFields: ['code', 'name'],
+      detailInclude: {
+        businessChallenge: { select: { code: true, title: true } },
+      },
+    },
+    arabicName: 'التجارب التشغيلية',
+  },
   'sandbox-applications': { model: 'sandboxApplication', options: { codePrefix: 'SBX', searchFields: ['code', 'solutionName', 'entityName'] }, arabicName: 'طلبات الساندبوكس' },
   'evaluations': { model: 'evaluation', options: { codePrefix: 'EVL', searchFields: ['code'] }, arabicName: 'التقييمات' },
   'eval-rubrics': { model: 'evalRubric', options: { codePrefix: 'RUB', searchFields: ['code', 'criterionName'] }, arabicName: 'معايير التقييم' },
@@ -322,13 +332,14 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
         strategicSource: { select: { code: true, sourceName: true } },
         parent: { select: { id: true, code: true, title: true } },
         children: { select: { id: true, code: true, title: true, status: true } },
-        challenges: { select: { id: true, code: true, title: true, status: true } },
+        campaigns: { select: { id: true, code: true, title: true, status: true } },
+        pilots: { select: { id: true, code: true, name: true, status: true } },
       },
     },
     arabicName: 'التحديات وفرص الأعمال',
   },
-  'challenges': {
-    model: 'challenge',
+  'campaigns': {
+    model: 'campaign',
     options: {
       codePrefix: 'CHL',
       searchFields: ['code', 'title', 'description'],
@@ -338,7 +349,7 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
         expertAssignments: { include: { expert: { select: { code: true, fullName: true } } } },
       },
     },
-    arabicName: 'الهاكاثونات والمسابقات',
+    arabicName: 'الحملات',
   },
   'cems': { model: 'cem', options: { codePrefix: 'INV', searchFields: ['code', 'fullName', 'email'] }, arabicName: 'المبتكرون' },
   'partners': {
@@ -383,6 +394,6 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
   'expert-challenge-assignments': {
     model: 'expertChallengeAssignment',
     options: { searchFields: ['role'] },
-    arabicName: 'إسناد الخبراء للتحديات',
+    arabicName: 'إسناد الخبراء للحملات',
   },
 };

@@ -143,6 +143,7 @@ export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
     formFields: [
       { key: 'name', label: 'اسم التجربة', required: true, cols: 2 },
       { key: 'description', label: 'الوصف', type: 'textarea', cols: 2 },
+      { key: 'businessChallengeId', label: 'تحدي الأعمال المرتبط', helperText: 'BCH-... التحدي الذي تتبع له التجربة' },
       { key: 'status', label: 'الحالة', lookupCategory: 'PilotStatus' },
       { key: 'budgetSar', label: 'الميزانية (ر.س)', type: 'currency' },
       { key: 'startDate', label: 'تاريخ البدء', type: 'date' },
@@ -185,17 +186,18 @@ export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
       { key: 'focusQuestions', label: 'أسئلة تركيز الجهد', type: 'textarea', cols: 2 },
       { key: 'proposals', label: 'مقترحات تركيز الجهد', type: 'textarea', cols: 2 },
       { key: 'innovationOpportunity', label: 'الفرصة الابتكارية', type: 'textarea', cols: 2 },
-      { key: 'presentationFile', label: 'ملف العرض', type: 'file', cols: 2 },
+      { key: 'presentationFile', label: 'ملف العرض', type: 'select', options: ['متوفر', 'غير متوفر'] },
     ],
   },
 
-  challenges: {
-    slug: 'challenges',
-    arabicName: 'الهاكاثونات والمسابقات',
-    description: 'إدارة الهاكاثونات والمسابقات المشتقة من تحديات الأعمال',
+  campaigns: {
+    slug: 'campaigns',
+    arabicName: 'الحملات',
+    description: 'موجات إطلاق تحديات الأعمال ضمن أطر زمنية ومسارات (هاكاثونات ومسابقات)',
     listColumns: [
       { key: 'code', label: 'المعرّف', type: 'badge' },
       { key: 'title', label: 'العنوان' },
+      { key: 'track', label: 'المسار', type: 'badge' },
       { key: 'category', label: 'الفئة', type: 'badge' },
       { key: 'status', label: 'الحالة', type: 'status' },
       { key: 'launchDate', label: 'الإطلاق', type: 'date' },
@@ -204,7 +206,8 @@ export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
     formFields: [
       { key: 'title', label: 'العنوان', required: true, cols: 2 },
       { key: 'description', label: 'الوصف', type: 'textarea', cols: 2 },
-      { key: 'businessChallengeId', label: 'تحدي الأعمال المرتبط', helperText: 'BCH-... التحدي الذي اشتُقت منه المسابقة' },
+      { key: 'businessChallengeId', label: 'تحدي الأعمال المرتبط', helperText: 'BCH-... التحدي الذي تطلقه هذه الحملة' },
+      { key: 'track', label: 'المسار', type: 'select', options: ['بحث وتطوير', 'ابتكار'] },
       { key: 'category', label: 'الفئة', lookupCategory: 'ChallengeCategory' },
       { key: 'status', label: 'الحالة', lookupCategory: 'ChallengeStatus' },
       { key: 'launchDate', label: 'تاريخ الإطلاق', type: 'date' },

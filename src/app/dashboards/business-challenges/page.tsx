@@ -36,7 +36,7 @@ export default function BusinessChallengesDashboard() {
         <KpiCard title="تحديات رئيسية" value={k.mainChallenges || 0} icon={Flag} variant="info" loading={loading} />
         <KpiCard title="أولوية عالية" value={k.highPriority || 0} icon={AlertTriangle} variant="warning" loading={loading} />
         <KpiCard title="مفتوحة / قيد المعالجة" value={k.open || 0} icon={DoorOpen} variant="success" loading={loading} />
-        <KpiCard title="هاكاثونات مشتقة" value={k.derivedEvents || 0} icon={Trophy} variant="neutral" loading={loading} />
+        <KpiCard title="حملات مرتبطة" value={k.derivedEvents || 0} icon={Trophy} variant="neutral" loading={loading} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">

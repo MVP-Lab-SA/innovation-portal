@@ -21,7 +21,8 @@
     "db:status": "prisma migrate status",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-    "import:business-challenges": "node scripts/import-business-challenges.mjs"
+    "import:business-challenges": "node scripts/import-business-challenges.mjs",
+    "normalize:business-challenges": "node scripts/normalize-business-challenges.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
