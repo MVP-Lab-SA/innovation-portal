@@ -3,7 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash2, Loader2, AlertCircle, ArrowRight, CheckCircle2, XCircle, Plus } from 'lucide-react';
+import {
+  Pencil, Trash2, Loader2, AlertCircle, ArrowRight, ArrowLeft,
+  CheckCircle2, XCircle, Plus, Compass, Trophy, TestTube, FlaskConical,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/AppShell';
 import { EntityForm } from '@/components/forms/EntityForm';
@@ -93,6 +96,45 @@ function relLabel(r: Row): string {
   return String(r.code ?? '—');
 }
 
+/**
+ * Innovation-funnel strip for a business challenge: strategic source →
+ * campaigns → sandbox applications → pilots. Counts come from the
+ * relations included on the detail record.
+ */
+function FunnelStrip({ record }: { record: Row }) {
+  const count = (k: string) => (Array.isArray(record[k]) ? (record[k] as unknown[]).length : 0);
+  const stages = [
+    {
+      label: 'المصدر الاستراتيجي',
+      value: isPlainObject(record.strategicSource) ? relLabel(record.strategicSource) : '—',
+      icon: Compass,
+    },
+    { label: 'الحملات', value: count('campaignLinks'), icon: Trophy },
+    { label: 'طلبات الساندبوكس', value: count('sandboxApplications'), icon: TestTube },
+    { label: 'التجارب التشغيلية', value: count('pilots'), icon: FlaskConical },
+  ];
+  return (
+    <div className="card mb-6">
+      <h3 className="text-base font-bold text-text-primary mb-4">مسار التحدي في منظومة الابتكار</h3>
+      <div className="flex items-stretch gap-2 overflow-x-auto pb-1">
+        {stages.map((s, i) => {
+          const Icon = s.icon;
+          return (
+            <div key={s.label} className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex flex-col items-center gap-1 px-4 py-3 rounded-lg bg-ministry-green-soft min-w-32">
+                <Icon className="w-5 h-5 text-ministry-green-deep" />
+                <div className="text-lg font-extrabold text-ministry-green-deep">{s.value}</div>
+                <div className="text-xs text-text-secondary text-center">{s.label}</div>
+              </div>
+              {i < stages.length - 1 && <ArrowLeft className="w-4 h-4 text-text-muted flex-shrink-0" />}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function RecordDetail({ entity, id }: { entity: string; id: string }) {
   const router = useRouter();
   const config = ENTITY_CONFIGS[entity];
@@ -177,10 +219,17 @@ export function RecordDetail({ entity, id }: { entity: string; id: string }) {
     : arabicName;
 
   const fieldKeys = new Set(config.formFields.map(f => f.key));
+  // Singular relations behind a `reference` form field (e.g. `campaign`
+  // for `campaignId`) — already shown resolved in the basic grid, so they
+  // are excluded from the relation-card section to avoid duplication.
+  const refRelKeys = new Set(
+    config.formFields.filter(f => f.type === 'reference').map(f => f.key.replace(/Id$/, '')),
+  );
   // Relation entries: array values, or object values that aren't form fields.
   const relations = record
     ? Object.entries(record).filter(([k, v]) =>
-        !fieldKeys.has(k) && k !== 'id' && k !== 'createdAt' && k !== 'updatedAt' &&
+        !fieldKeys.has(k) && !refRelKeys.has(k) &&
+        k !== 'id' && k !== 'createdAt' && k !== 'updatedAt' &&
         (Array.isArray(v) || isPlainObject(v)))
     : [];
 
@@ -259,6 +308,11 @@ export function RecordDetail({ entity, id }: { entity: string; id: string }) {
                 if (v == null || v === '') display = '—';
                 else if (f.type === 'date' || f.type === 'datetime') display = formatDate(v as string);
                 else if (f.type === 'currency') display = formatCurrency(v as number);
+                else if (f.type === 'reference') {
+                  // Show the linked record's label, not the raw id.
+                  const rel = record[f.key.replace(/Id$/, '')];
+                  display = isPlainObject(rel) ? relLabel(rel) : String(v);
+                }
                 else display = String(v);
                 return (
                   <div key={f.key} className={f.type === 'textarea' ? 'md:col-span-2 flex flex-col' : 'flex flex-col'}>
@@ -269,6 +323,8 @@ export function RecordDetail({ entity, id }: { entity: string; id: string }) {
               })}
             </dl>
           </div>
+
+          {entity === 'business-challenges' && <FunnelStrip record={record} />}
 
           {relations.map(([key, value]) => {
             const addCfg = ADD_RELATION[entity]?.[key];

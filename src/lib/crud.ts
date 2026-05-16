@@ -370,7 +370,13 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
   },
   'campaign-business-challenges': {
     model: 'campaignBusinessChallenge',
-    options: { searchFields: ['campaignId', 'businessChallengeId'] },
+    options: {
+      searchFields: ['campaignId', 'businessChallengeId'],
+      detailInclude: {
+        campaign: { select: { code: true, title: true, status: true } },
+        businessChallenge: { select: { code: true, title: true, status: true } },
+      },
+    },
     arabicName: 'تحديات الحملات',
   },
   'cems': { model: 'cem', options: { codePrefix: 'INV', searchFields: ['code', 'fullName', 'email'] }, arabicName: 'المبتكرون' },

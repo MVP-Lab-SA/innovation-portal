@@ -3,15 +3,17 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Loader2, Upload, FileCheck2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { RelationField } from './RelationField';
 
 export interface FieldConfig {
   key: string;
   label: string;
-  type?: 'text' | 'textarea' | 'number' | 'date' | 'datetime' | 'email' | 'tel' | 'url' | 'select' | 'currency' | 'file';
+  type?: 'text' | 'textarea' | 'number' | 'date' | 'datetime' | 'email' | 'tel' | 'url' | 'select' | 'currency' | 'file' | 'reference';
   required?: boolean;
   placeholder?: string;
   options?: string[]; // for select
   lookupCategory?: string;
+  referenceEntity?: string; // for type 'reference' — the entity slug to pick from
   helperText?: string;
   cols?: 1 | 2; // grid columns
 }
@@ -115,6 +117,17 @@ export function EntityForm({ title, fields, initial = {}, entity, isEdit, onSucc
       return (
         <textarea value={v} onChange={e => set(e.target.value)} placeholder={f.placeholder}
           rows={3} className="input-base resize-y min-h-20" />
+      );
+    }
+
+    if (f.type === 'reference' && f.referenceEntity) {
+      return (
+        <RelationField
+          entity={f.referenceEntity}
+          value={v}
+          onChange={set}
+          placeholder={f.placeholder}
+        />
       );
     }
     
