@@ -18,8 +18,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={tajawal.variable}>
-      <body className="font-sans antialiased">
+    <html lang="ar" dir="rtl" className={tajawal.variable} suppressHydrationWarning>
+      <body className="font-sans antialiased" suppressHydrationWarning>
         <Providers>{children}</Providers>
         <Toaster position="bottom-left" richColors closeButton />
       </body>
