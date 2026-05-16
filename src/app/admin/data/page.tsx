@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
 import { DataTable } from '@/components/DataTable';
 import { EntityForm } from '@/components/forms/EntityForm';
+import { CsvImport } from '@/components/CsvImport';
 import { useEntities } from '@/hooks/useData';
 import { ENTITY_CONFIGS } from '@/lib/entityConfigs';
 import { Database, ArrowLeft } from 'lucide-react';
@@ -85,10 +86,13 @@ function AdminDataInner() {
       showRefresh
       onRefresh={refresh}
       actions={
-        <button onClick={() => setSelectedEntity(null)} className="btn-secondary text-sm flex items-center gap-2">
-          <ArrowLeft className="w-4 h-4 rotate-180" />
-          <span>كل الجداول</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <CsvImport entity={selectedEntity} fields={config!.formFields} onDone={refresh} />
+          <button onClick={() => setSelectedEntity(null)} className="btn-secondary text-sm flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4 rotate-180" />
+            <span>كل الجداول</span>
+          </button>
+        </div>
       }
     >
       <DataTable

@@ -7,25 +7,26 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 // Entities exposed to global search: prisma model key, the slug used for
-// /records/[entity]/[id], and the human-label field.
-const TARGETS: { slug: string; model: string; label: string }[] = [
-  { slug: 'ideas', model: 'idea', label: 'title' },
-  { slug: 'initiatives', model: 'initiative', label: 'name' },
-  { slug: 'challenges', model: 'challenge', label: 'title' },
-  { slug: 'tasks', model: 'task', label: 'title' },
-  { slug: 'milestones', model: 'milestone', label: 'name' },
-  { slug: 'pilots', model: 'pilot', label: 'name' },
-  { slug: 'risks', model: 'risk', label: 'title' },
+// /records/[entity]/[id], the human-label field, and `extra` free-text
+// fields (descriptions/bodies) also matched against the query.
+const TARGETS: { slug: string; model: string; label: string; extra?: string[] }[] = [
+  { slug: 'ideas', model: 'idea', label: 'title', extra: ['description', 'impactExpected'] },
+  { slug: 'initiatives', model: 'initiative', label: 'name', extra: ['description'] },
+  { slug: 'challenges', model: 'challenge', label: 'title', extra: ['description'] },
+  { slug: 'tasks', model: 'task', label: 'title', extra: ['description'] },
+  { slug: 'milestones', model: 'milestone', label: 'name', extra: ['description'] },
+  { slug: 'pilots', model: 'pilot', label: 'name', extra: ['description'] },
+  { slug: 'risks', model: 'risk', label: 'title', extra: ['description'] },
   { slug: 'partners', model: 'partner', label: 'partnerName' },
-  { slug: 'documents', model: 'document', label: 'title' },
-  { slug: 'experts', model: 'expert', label: 'fullName' },
-  { slug: 'employees', model: 'employee', label: 'fullName' },
-  { slug: 'cems', model: 'cem', label: 'fullName' },
-  { slug: 'sandbox-applications', model: 'sandboxApplication', label: 'solutionName' },
-  { slug: 'communications', model: 'communication', label: 'title' },
-  { slug: 'metrics', model: 'outcomeMetric', label: 'metricName' },
-  { slug: 'calendar-events', model: 'calendarEvent', label: 'title' },
-  { slug: 'strategic-sources', model: 'strategicSource', label: 'sourceName' },
+  { slug: 'documents', model: 'document', label: 'title', extra: ['description'] },
+  { slug: 'experts', model: 'expert', label: 'fullName', extra: ['specialization', 'organization'] },
+  { slug: 'employees', model: 'employee', label: 'fullName', extra: ['jobTitle', 'department'] },
+  { slug: 'cems', model: 'cem', label: 'fullName', extra: ['organization'] },
+  { slug: 'sandbox-applications', model: 'sandboxApplication', label: 'solutionName', extra: ['solutionDescription', 'entityName'] },
+  { slug: 'communications', model: 'communication', label: 'title', extra: ['content'] },
+  { slug: 'metrics', model: 'outcomeMetric', label: 'metricName', extra: ['description'] },
+  { slug: 'calendar-events', model: 'calendarEvent', label: 'title', extra: ['description'] },
+  { slug: 'strategic-sources', model: 'strategicSource', label: 'sourceName', extra: ['description'] },
 ];
 
 type SearchModel = { findMany: (args: unknown) => Promise<Array<Record<string, unknown>>> };
@@ -45,12 +46,10 @@ export async function GET(request: NextRequest) {
 
     const results = await Promise.all(
       allowed.map(async t => {
+        const fields = ['code', t.label, ...(t.extra ?? [])];
         const rows = await client[t.model].findMany({
           where: {
-            OR: [
-              { code: { contains: q, mode: 'insensitive' } },
-              { [t.label]: { contains: q, mode: 'insensitive' } },
-            ],
+            OR: fields.map(f => ({ [f]: { contains: q, mode: 'insensitive' } })),
           },
           take: 6,
           orderBy: { code: 'asc' },

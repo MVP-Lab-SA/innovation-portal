@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash2, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
+import { Pencil, Trash2, Loader2, AlertCircle, ArrowRight, CheckCircle2, XCircle, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/AppShell';
 import { EntityForm } from '@/components/forms/EntityForm';
@@ -15,6 +15,26 @@ type Row = Record<string, unknown>;
 function isPlainObject(v: unknown): v is Row {
   return !!v && typeof v === 'object' && !Array.isArray(v);
 }
+
+/**
+ * Lightweight approval flows: entities where the detail page offers
+ * approve/reject buttons that set a status field. Setting the status
+ * also triggers a STATUS_CHANGED notification (see emitForCrud).
+ */
+const APPROVAL_FLOWS: Record<string, { field: string; approve: string; reject: string }> = {
+  ideas: { field: 'status', approve: 'موافق عليها', reject: 'مرفوضة' },
+};
+
+/**
+ * Add-relation map: for a parent entity, which related-record sections can
+ * have a new junction row added inline, and which junction entity + parent
+ * FK field to seed the form with.
+ */
+const ADD_RELATION: Record<string, Record<string, { entity: string; parentField: string }>> = {
+  ideas: { expertAssignments: { entity: 'idea-expert-assignments', parentField: 'ideaId' } },
+  initiatives: { partners: { entity: 'initiative-partners', parentField: 'initiativeId' } },
+  challenges: { expertAssignments: { entity: 'expert-challenge-assignments', parentField: 'challengeId' } },
+};
 
 /** Pick a human label off a related record. */
 function relLabel(r: Row): string {
@@ -34,6 +54,7 @@ export function RecordDetail({ entity, id }: { entity: string; id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [role, setRole] = useState<string | null>(null);
+  const [addRel, setAddRel] = useState<{ entity: string; parentField: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,6 +93,25 @@ export function RecordDetail({ entity, id }: { entity: string; id: string }) {
     }
   };
 
+  const flow = APPROVAL_FLOWS[entity];
+  const applyDecision = async (decision: 'approve' | 'reject') => {
+    if (!flow) return;
+    const value = decision === 'approve' ? flow.approve : flow.reject;
+    if (!confirm(decision === 'approve' ? 'اعتماد هذا السجل؟' : 'رفض هذا السجل؟')) return;
+    try {
+      const res = await fetch(`/api/entities/${entity}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [flow.field]: value }),
+      });
+      if (!res.ok) throw new Error('فشل تحديث الحالة');
+      toast.success(decision === 'approve' ? 'تم الاعتماد' : 'تم الرفض');
+      load();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'فشل التحديث');
+    }
+  };
+
   if (!config) {
     return (
       <AppShell title="سجل غير معروف">
@@ -107,6 +147,24 @@ export function RecordDetail({ entity, id }: { entity: string; id: string }) {
             <ArrowRight className="w-4 h-4" />
             <span>القائمة</span>
           </Link>
+          {canEdit && record && flow && (
+            <>
+              <button
+                onClick={() => applyDecision('approve')}
+                className="btn-secondary text-sm flex items-center gap-2 text-ministry-green-deep"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>اعتماد</span>
+              </button>
+              <button
+                onClick={() => applyDecision('reject')}
+                className="btn-secondary text-sm flex items-center gap-2 text-red-600"
+              >
+                <XCircle className="w-4 h-4" />
+                <span>رفض</span>
+              </button>
+            </>
+          )}
           {canEdit && record && (
             <button onClick={() => setEditing(true)} className="btn-primary text-sm flex items-center gap-2">
               <Pencil className="w-4 h-4" />
@@ -163,11 +221,24 @@ export function RecordDetail({ entity, id }: { entity: string; id: string }) {
             </dl>
           </div>
 
-          {relations.map(([key, value]) => (
+          {relations.map(([key, value]) => {
+            const addCfg = ADD_RELATION[entity]?.[key];
+            return (
             <div key={key} className="card mb-6">
-              <h3 className="text-base font-bold text-text-primary mb-4">
-                {key} {Array.isArray(value) && <span className="text-text-muted font-normal">({value.length})</span>}
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-bold text-text-primary">
+                  {key} {Array.isArray(value) && <span className="text-text-muted font-normal">({value.length})</span>}
+                </h3>
+                {addCfg && canEdit && (
+                  <button
+                    onClick={() => setAddRel(addCfg)}
+                    className="btn-secondary text-xs flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>إضافة</span>
+                  </button>
+                )}
+              </div>
               {Array.isArray(value) ? (
                 value.length === 0 ? (
                   <p className="text-sm text-text-muted">لا توجد سجلات مرتبطة</p>
@@ -185,7 +256,8 @@ export function RecordDetail({ entity, id }: { entity: string; id: string }) {
                 <p className="text-sm text-text-primary">{relLabel(value as Row)}</p>
               )}
             </div>
-          ))}
+            );
+          })}
         </>
       )}
 
@@ -198,6 +270,17 @@ export function RecordDetail({ entity, id }: { entity: string; id: string }) {
           isEdit
           onSuccess={load}
           onClose={() => setEditing(false)}
+        />
+      )}
+
+      {addRel && ENTITY_CONFIGS[addRel.entity] && (
+        <EntityForm
+          title={`إضافة: ${ENTITY_CONFIGS[addRel.entity].arabicName}`}
+          entity={addRel.entity}
+          fields={ENTITY_CONFIGS[addRel.entity].formFields}
+          initial={{ [addRel.parentField]: id }}
+          onSuccess={load}
+          onClose={() => setAddRel(null)}
         />
       )}
     </AppShell>

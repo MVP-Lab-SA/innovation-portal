@@ -526,6 +526,60 @@ export const ENTITY_CONFIGS: Record<string, EntityConfig> = {
       { key: 'relevance', label: 'الأهمية' },
     ],
   },
+
+  'idea-expert-assignments': {
+    slug: 'idea-expert-assignments',
+    arabicName: 'إسناد الخبراء للأفكار',
+    description: 'ربط الخبراء بالأفكار للتقييم',
+    listColumns: [
+      { key: 'ideaId', label: 'الفكرة' },
+      { key: 'expertId', label: 'الخبير' },
+      { key: 'assignmentRole', label: 'الدور', type: 'badge' },
+      { key: 'status', label: 'الحالة', type: 'status' },
+    ],
+    formFields: [
+      { key: 'ideaId', label: 'معرّف الفكرة', required: true, helperText: 'IDE-... أو معرّف السجل' },
+      { key: 'expertId', label: 'معرّف الخبير', required: true, helperText: 'SME-... أو معرّف السجل' },
+      { key: 'assignmentRole', label: 'الدور', lookupCategory: 'ExpertRole' },
+      { key: 'status', label: 'الحالة', lookupCategory: 'AssignmentStatus' },
+      { key: 'feedback', label: 'ملاحظات', type: 'textarea', cols: 2 },
+    ],
+  },
+
+  'initiative-partners': {
+    slug: 'initiative-partners',
+    arabicName: 'شركاء المبادرات',
+    description: 'ربط الشركاء بالمبادرات',
+    listColumns: [
+      { key: 'initiativeId', label: 'المبادرة' },
+      { key: 'partnerId', label: 'الشريك' },
+      { key: 'role', label: 'الدور', type: 'badge' },
+    ],
+    formFields: [
+      { key: 'initiativeId', label: 'معرّف المبادرة', required: true, helperText: 'INI-... أو معرّف السجل' },
+      { key: 'partnerId', label: 'معرّف الشريك', required: true, helperText: 'PRT-... أو معرّف السجل' },
+      { key: 'role', label: 'الدور', lookupCategory: 'PartnerRole' },
+      { key: 'contribution', label: 'المساهمة', type: 'textarea', cols: 2 },
+      { key: 'startDate', label: 'تاريخ البدء', type: 'date' },
+      { key: 'endDate', label: 'تاريخ الانتهاء', type: 'date' },
+    ],
+  },
+
+  'expert-challenge-assignments': {
+    slug: 'expert-challenge-assignments',
+    arabicName: 'إسناد الخبراء للتحديات',
+    description: 'ربط الخبراء بالتحديات',
+    listColumns: [
+      { key: 'expertId', label: 'الخبير' },
+      { key: 'challengeId', label: 'التحدي' },
+      { key: 'role', label: 'الدور', type: 'badge' },
+    ],
+    formFields: [
+      { key: 'expertId', label: 'معرّف الخبير', required: true, helperText: 'SME-... أو معرّف السجل' },
+      { key: 'challengeId', label: 'معرّف التحدي', required: true, helperText: 'CHL-... أو معرّف السجل' },
+      { key: 'role', label: 'الدور', lookupCategory: 'ExpertRole' },
+    ],
+  },
 };
 
 export const ENTITY_SLUGS = Object.keys(ENTITY_CONFIGS);

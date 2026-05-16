@@ -354,4 +354,20 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
     },
     arabicName: 'سجل التغييرات',
   },
+  // Junction entities — enable relationship management.
+  'idea-expert-assignments': {
+    model: 'ideaExpertAssignment',
+    options: { searchFields: ['assignmentRole', 'status'] },
+    arabicName: 'إسناد الخبراء للأفكار',
+  },
+  'initiative-partners': {
+    model: 'initiativePartner',
+    options: { searchFields: ['role'] },
+    arabicName: 'شركاء المبادرات',
+  },
+  'expert-challenge-assignments': {
+    model: 'expertChallengeAssignment',
+    options: { searchFields: ['role'] },
+    arabicName: 'إسناد الخبراء للتحديات',
+  },
 };
