@@ -37,6 +37,7 @@ export default function PilotsDashboard() {
 
       <DataTable
         title="قائمة التجارب"
+        entitySlug="pilots"
         data={list}
         columns={[
           { key: 'code', label: 'المعرّف', width: '100px', type: 'badge' },

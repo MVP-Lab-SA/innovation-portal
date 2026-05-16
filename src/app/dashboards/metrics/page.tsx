@@ -52,6 +52,7 @@ export default function MetricsDashboard() {
 
       <DataTable
         title="قائمة المؤشرات"
+        entitySlug="metrics"
         data={list}
         columns={[
           { key: 'code', label: 'المعرّف', width: '100px', type: 'badge' },

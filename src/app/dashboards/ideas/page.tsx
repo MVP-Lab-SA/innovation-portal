@@ -42,6 +42,7 @@ export default function IdeasDashboard() {
 
       <DataTable
         title="أحدث الأفكار"
+        entitySlug="ideas"
         data={recent}
         columns={[
           { key: 'code', label: 'المعرّف', width: '100px', type: 'badge' },

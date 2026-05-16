@@ -43,6 +43,7 @@ export default function PartnersDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <DataTable
           title="قائمة الشركاء"
+          entitySlug="partners"
           data={partners}
           pageSize={8}
           columns={[
@@ -54,6 +55,7 @@ export default function PartnersDashboard() {
         />
         <DataTable
           title="آخر التفاعلات"
+          entitySlug="partner-interactions"
           data={interactions}
           pageSize={8}
           columns={[

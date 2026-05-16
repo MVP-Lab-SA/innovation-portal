@@ -42,6 +42,7 @@ export default function SandboxDashboard() {
 
       <DataTable
         title="الطلبات النشطة"
+        entitySlug="sandbox-applications"
         data={apps}
         columns={[
           { key: 'code', label: 'المعرّف', width: '100px', type: 'badge' },

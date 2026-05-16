@@ -43,6 +43,7 @@ export default function InitiativesDashboard() {
 
       <DataTable
         title="قائمة المبادرات"
+        entitySlug="initiatives"
         data={list}
         columns={[
           { key: 'code', label: 'المعرّف', width: '100px', type: 'badge' },

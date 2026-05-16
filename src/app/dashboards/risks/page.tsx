@@ -41,6 +41,7 @@ export default function RisksDashboard() {
 
       <DataTable
         title="سجل المخاطر التفصيلي"
+        entitySlug="risks"
         data={list}
         columns={[
           { key: 'code', label: 'المعرّف', width: '100px', type: 'badge' },

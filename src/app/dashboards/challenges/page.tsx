@@ -39,6 +39,7 @@ export default function ChallengesDashboard() {
 
       <DataTable
         title="قائمة التحديات"
+        entitySlug="challenges"
         data={list}
         columns={[
           { key: 'code', label: 'المعرّف', width: '100px', type: 'badge' },

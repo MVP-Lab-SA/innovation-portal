@@ -38,6 +38,7 @@ export default function CommunicationsDashboard() {
 
       <DataTable
         title="قائمة الحملات الإعلامية"
+        entitySlug="communications"
         data={list}
         columns={[
           { key: 'code', label: 'المعرّف', width: '100px', type: 'badge' },
