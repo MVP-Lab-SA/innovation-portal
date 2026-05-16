@@ -20,7 +20,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
       authClient={authClient}
       redirectTo="/"
       emailOTP
-      social={{ providers: ['google'] }}
     >
       {children}
     </NeonAuthUIProvider>

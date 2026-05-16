@@ -30,7 +30,6 @@ export async function GET() {
     auth: {
       neon_auth_url: !!process.env.NEON_AUTH_BASE_URL,
       cookie_secret: !!(process.env.NEON_AUTH_COOKIE_SECRET || process.env.NEXTAUTH_SECRET),
-      google_oauth: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
     },
     authorization: {
       admin_email_set: !!process.env.ADMIN_EMAIL,

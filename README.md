@@ -18,7 +18,6 @@
 
 - 🌳 **Auth state يتفرع مع DB**: كل branch له auth منفصل
 - 📧 **Email OTP مدمج**: بدون Resend خارجي
-- 🔵 **Google OAuth مفعّل افتراضياً** (credentials اختبارية)
 - 🗄️ **بيانات المستخدمين في DB**: في `neon_auth.users_sync`
 - ⚡ **متغير واحد فقط**: `NEON_AUTH_BASE_URL` بدلاً من 6+
 
