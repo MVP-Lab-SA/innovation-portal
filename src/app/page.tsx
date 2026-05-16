@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { getSessionWithProfile } from '@/lib/auth';
 import Link from 'next/link';
 import { AppShell } from '@/components/AppShell';
-import { DASHBOARDS } from '@/components/Sidebar';
+import { DASHBOARDS } from '@/lib/navigation';
 import { LayoutDashboard, Sparkles, Activity, Database, ArrowLeft } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';

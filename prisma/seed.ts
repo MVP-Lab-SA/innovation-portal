@@ -52,6 +52,19 @@ async function seedAuthAdmin() {
   }
 }
 
+async function markAuthAdminVerified() {
+  const updated = await prisma.$executeRaw`
+    UPDATE neon_auth."user"
+    SET "emailVerified" = true
+    WHERE lower(email) = lower(${ADMIN_EMAIL})
+  `;
+  if (updated > 0) {
+    console.log(`✅ Auth account verified: ${ADMIN_EMAIL}`);
+  } else {
+    console.warn(`⚠️ Auth account not found to verify: ${ADMIN_EMAIL}`);
+  }
+}
+
 const LOOKUPS: Record<string, string[]> = {
   Departments: ['الإدارة العليا', 'إدارة الابتكار', 'الإدارة المالية', 'الشؤون القانونية', 'الموارد البشرية', 'تقنية المعلومات', 'العلاقات العامة'],
   EmployeeStatus: ['نشط', 'إجازة', 'منتهي الخدمة'],
@@ -123,6 +136,7 @@ async function main() {
   console.log(`✅ Seeded ${total} lookup values across ${Object.keys(LOOKUPS).length} categories`);
 
   await seedAuthAdmin();
+  await markAuthAdminVerified();
   
   await prisma.user.upsert({
     where: { email: ADMIN_EMAIL },
