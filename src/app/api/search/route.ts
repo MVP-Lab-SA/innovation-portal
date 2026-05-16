@@ -21,6 +21,7 @@ const TARGETS: { slug: string; model: string; label: string; extra?: string[] }[
   { slug: 'partners', model: 'partner', label: 'partnerName' },
   { slug: 'documents', model: 'document', label: 'title', extra: ['description'] },
   { slug: 'experts', model: 'expert', label: 'fullName', extra: ['specialization', 'organization'] },
+  { slug: 'expert-opinions', model: 'expertOpinion', label: 'subject', extra: ['summary'] },
   { slug: 'employees', model: 'employee', label: 'fullName', extra: ['jobTitle', 'department'] },
   { slug: 'cems', model: 'cem', label: 'fullName', extra: ['organization'] },
   { slug: 'sandbox-applications', model: 'sandboxApplication', label: 'solutionName', extra: ['solutionDescription', 'entityName'] },

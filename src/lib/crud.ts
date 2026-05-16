@@ -289,9 +289,22 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
       detailInclude: {
         ideaAssignments: { include: { idea: { select: { code: true, title: true } } } },
         evaluations: { select: { id: true, code: true, status: true, overallScore: true } },
+        opinions: { select: { id: true, code: true, subject: true, finalScore: true } },
       },
     },
     arabicName: 'الخبراء',
+  },
+  'expert-opinions': {
+    model: 'expertOpinion',
+    options: {
+      codePrefix: 'EXO',
+      searchFields: ['code', 'subject'],
+      detailInclude: {
+        expert: { select: { code: true, fullName: true } },
+        businessChallenge: { select: { code: true, title: true } },
+      },
+    },
+    arabicName: 'آراء الخبراء',
   },
   'ideas': {
     model: 'idea',
@@ -301,6 +314,7 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
       detailInclude: {
         submitterCem: { select: { code: true, fullName: true } },
         relatedChallenge: { select: { code: true, title: true } },
+        businessChallenge: { select: { code: true, title: true } },
         evaluations: { select: { id: true, code: true, status: true, overallScore: true } },
         expertAssignments: { include: { expert: { select: { code: true, fullName: true } } } },
       },
@@ -350,6 +364,8 @@ export const MODEL_REGISTRY: Record<string, EntityRegistryEntry> = {
         campaignLinks: { include: { campaign: { select: { code: true, title: true, status: true } } } },
         pilots: { select: { id: true, code: true, name: true, status: true } },
         sandboxApplications: { select: { id: true, code: true, solutionName: true, applicationStatus: true } },
+        ideas: { select: { id: true, code: true, title: true, status: true } },
+        expertOpinions: { select: { id: true, code: true, subject: true, finalScore: true } },
       },
     },
     arabicName: 'التحديات وفرص الأعمال',

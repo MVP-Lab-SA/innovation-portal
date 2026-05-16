@@ -36,6 +36,7 @@ const APPROVAL_FLOWS: Record<string, { field: string; approve: string; reject: s
 const ADD_RELATION: Record<string, Record<string, { entity: string; parentField: string }>> = {
   ideas: { expertAssignments: { entity: 'idea-expert-assignments', parentField: 'ideaId' } },
   initiatives: { partners: { entity: 'initiative-partners', parentField: 'initiativeId' } },
+  experts: { opinions: { entity: 'expert-opinions', parentField: 'expertId' } },
   campaigns: {
     expertAssignments: { entity: 'expert-challenge-assignments', parentField: 'challengeId' },
     businessChallengeLinks: { entity: 'campaign-business-challenges', parentField: 'campaignId' },
@@ -46,6 +47,8 @@ const ADD_RELATION: Record<string, Record<string, { entity: string; parentField:
     campaignLinks: { entity: 'campaign-business-challenges', parentField: 'businessChallengeId' },
     pilots: { entity: 'pilots', parentField: 'businessChallengeId' },
     sandboxApplications: { entity: 'sandbox-applications', parentField: 'businessChallengeId' },
+    ideas: { entity: 'ideas', parentField: 'businessChallengeId' },
+    expertOpinions: { entity: 'expert-opinions', parentField: 'businessChallengeId' },
   },
 };
 
@@ -76,6 +79,9 @@ const RELATION_LABELS: Record<string, string> = {
   pilot: 'التجربة الناتجة',
   idea: 'الفكرة',
   partner: 'الشريك',
+  opinions: 'آراء الخبير',
+  expertOpinions: 'آراء الخبراء',
+  expert: 'الخبير',
 };
 
 /** Pick a human label off a related record — never falls back to a raw ID. */

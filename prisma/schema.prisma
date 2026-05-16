@@ -141,9 +141,14 @@ model Initiative {
   budgetSar           Decimal?     @db.Decimal(15, 2)
   actualSpendSar      Decimal?     @db.Decimal(15, 2)
   progress            Int?         @default(0) // 0-100
+  department          String?      // الإدارة المعنية
+  documentationUrl    String?      // التوثيق
+  update1             String?      @db.Text // التحديث 1
+  update2             String?      @db.Text // التحديث 2
+  update3             String?      @db.Text // التحديث 3
   ownerId             String?
   owner               Employee?    @relation("InitiativeOwner", fields: [ownerId], references: [id])
-  
+
   // Source links (1-to-Many)
   sourceIdeaId        String?
   sourceIdea          Idea?        @relation("IdeaInitiatives", fields: [sourceIdeaId], references: [id])
@@ -221,31 +226,66 @@ model Expert {
   id              String       @id @default(cuid())
   code            String       @unique // SME-001
   fullName        String
-  category        String?      // فئة الخبير
+  category        String?      // فئة / تصنيف الخبير (تنظيمي / تشغيلي)
   specialization  String?      // التخصص
   email           String?
   phone           String?
-  organization    String?
+  organization    String?      // الجهة
+  agency          String?      // الوكالة
+  department      String?      // الإدارة
   jobTitle        String?
+  yearsExperience Int?         // سنوات الخبرة
   country         String?
   city            String?
   cvUrl           String?
   linkedInUrl     String?
-  bio             String?      @db.Text
+  bio             String?      @db.Text // الخبرة العملية
   status          String?      @default("نشط")
-  
+
   // Relations through bridge tables
   ideaAssignments       IdeaExpertAssignment[]
   challengeAssignments  ExpertChallengeAssignment[]
   eventParticipations   ExpertEventParticipation[]
   initiativeContributions ExpertInitiativeContribution[]
   evaluations           Evaluation[]
+  opinions              ExpertOpinion[]
   
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-  
+
   @@index([category])
   @@index([status])
+}
+
+// Expert opinion / visualization, scored against the 5-criteria rubric
+// (ملاءمة التخصص، عمق التحليل، قابلية التطبيق، الحياد المهني، الاتساق العام).
+model ExpertOpinion {
+  id                  String   @id @default(cuid())
+  code                String   @unique // EXO-001
+  expertId            String
+  expert              Expert   @relation(fields: [expertId], references: [id], onDelete: Cascade)
+  businessChallengeId String?
+  businessChallenge   BusinessChallenge? @relation(fields: [businessChallengeId], references: [id])
+  subject             String?  // موضوع الرأي
+  summary             String?  @db.Text // ملخص الرأي / المرئيات
+
+  // 5-criteria rubric, each scored 1-5
+  relevanceScore      Int?     // ملاءمة التخصص
+  depthScore          Int?     // عمق التحليل
+  applicabilityScore  Int?     // قابلية التطبيق
+  neutralityScore     Int?     // الحياد المهني
+  consistencyScore    Int?     // الاتساق العام
+  finalScore          Decimal? @db.Decimal(5, 2) // التقييم النهائي (مرجّح)
+
+  visualizationGrade  String?  // تصنيف المرئيات
+  recommendation      String?  // التوصية النهائية
+  notes               String?  @db.Text
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([expertId])
+  @@index([businessChallengeId])
 }
 
 // ============================================================
@@ -270,6 +310,8 @@ model Idea {
   impactExpected      String?      // الأثر المتوقع
   relatedChallengeId  String?
   relatedChallenge    Campaign?    @relation(fields: [relatedChallengeId], references: [id])
+  businessChallengeId String?
+  businessChallenge   BusinessChallenge? @relation(fields: [businessChallengeId], references: [id])
   
   // Relations
   expertAssignments   IdeaExpertAssignment[]
@@ -324,26 +366,51 @@ model SandboxApplication {
   // Submitting entity
   entityName              String       // اسم الجهة
   entityType              String?      // نوع الجهة
+  commercialRegistration  String?      // رقم السجل التجاري
+  city                    String?      // موقع الشركة / المدينة
+  country                 String?      // الدولة
   contactEmail            String?
   contactPhone            String?
   responsibleName         String?
   jobTitle                String?
-  
+
   // Solution details
+  requestNature           String?      // ما هي طبيعة طلبك؟
   solutionName            String       // اسم الحل/المشروع
   solutionDescription     String?      @db.Text
   problemStatement        String?      @db.Text
-  solutionDomain          String?      // مجال الحل
+  solutionDomain          String?      // القطاع المستهدف / مجال الحل
+  otherSector             String?      // قطاع مستهدف آخر
   productMaturity         String?      // مرحلة جاهزية المنتج (TRL)
   vision2030Alignment     String?      // التوافق مع رؤية 2030
   scalingStrategy         String?      // استراتيجية التوسع
-  
+
+  // Regulatory & integration
+  isRegulated             String?      // حاصل على ترخيص/تصريح أو خاضع للرقابة؟
+  hasConflictingRegulations String?    // تنظيمات حالية تتعارض مع الابتكار؟
+  conflictingRegulationDetails String? @db.Text // اللائحة التنظيمية والجهة المختصة
+  overlapsGovEntities     String?      // تداخل مع جهات حكومية أو أنظمة قائمة؟
+  needsData               String?      // هل يحتاج الحل إلى بيانات؟
+  needsIntegration        String?      // هل يحتاج تكامل تقني مع أنظمة الوزارة؟
+  needsRegulatoryException String?     // هل يتطلب استثناء تنظيمي؟
+
+  // Trial plan
+  businessPlanFile        String?      // خطة العمل / العرض التقديمي (مرفق)
+  successKpis             String?      @db.Text // مؤشرات الأداء الرئيسية
+  proposedTrialLocation   String?      // موقع التجربة المقترح
+  useCases                String?      @db.Text // حالات الاستخدام
+  targetCustomers         String?      @db.Text // نوع العملاء وآلية الحصول عليهم
+  proposedTimeline        String?      @db.Text // الجدول الزمني والمعالم
+  expectedImpact          String?      @db.Text // الأثر المتوقع (متعدد)
+
   // Application metadata
   applicationStatus       String?      @default("قيد المراجعة الأولية")
   applicationCategory     String?      // متكررة / جديدة
   submissionDate          DateTime?    @default(now())
   lastUpdateDate          DateTime?    @updatedAt
   reviewer                String?
+  update1                 String?      @db.Text // تحديث 1
+  update2                 String?      @db.Text // تحديث 2
   
   // Outcomes
   trialResult             String?      @db.Text
@@ -566,7 +633,8 @@ model BusinessChallenge {
   proposalType        String?  // تصنيف المقترحات
   innovationOpportunity String? @db.Text // الفرصة الابتكارية
   status              String?  @default("مفتوح") // حالة التحدي
-  track               String?  // مسار التحدي
+  track               String?  // مسار التحدي (بحث وتطوير / ابتكار)
+  hackathonReadiness  String?  // جاهزية الهاكاثون (مناسب / مناسب بشروط / غير مناسب)
   presentationFile    String?  // ملف العرض
 
   // Strategic source the challenge originates from
@@ -582,6 +650,8 @@ model BusinessChallenge {
   campaignLinks       CampaignBusinessChallenge[]
   pilots              Pilot[]
   sandboxApplications SandboxApplication[]
+  ideas               Idea[]
+  expertOpinions      ExpertOpinion[]
 
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
