@@ -73,16 +73,32 @@ export function DataTable({
     else { setSortBy(key); setSortDir('asc'); }
   };
   
-  const handleExportExcel = () => {
-    const exportData = filtered.map(row => {
+  const exportRows = () =>
+    filtered.map(row => {
       const obj: Record<string, any> = {};
       columns.forEach(col => { obj[col.label] = row[col.key] ?? ''; });
       return obj;
     });
-    const ws = XLSX.utils.json_to_sheet(exportData);
+  const exportFileBase = `${title || 'export'}-${new Date().toISOString().split('T')[0]}`;
+
+  const handleExportExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(exportRows());
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, title || 'البيانات');
-    XLSX.writeFile(wb, `${title || 'export'}-${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(wb, `${exportFileBase}.xlsx`);
+  };
+
+  const handleExportCSV = () => {
+    const ws = XLSX.utils.json_to_sheet(exportRows());
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    // Prepend a UTF-8 BOM so Excel renders Arabic correctly.
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${exportFileBase}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
   
   const renderCell = (col: Column, row: any) => {
@@ -117,10 +133,16 @@ export function DataTable({
               </div>
             )}
             {exportable && filtered.length > 0 && (
-              <button onClick={handleExportExcel} className="btn-secondary flex items-center gap-2 text-sm" title="تصدير Excel">
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Excel</span>
-              </button>
+              <>
+                <button onClick={handleExportExcel} className="btn-secondary flex items-center gap-2 text-sm" title="تصدير Excel">
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">Excel</span>
+                </button>
+                <button onClick={handleExportCSV} className="btn-secondary flex items-center gap-2 text-sm" title="تصدير CSV">
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">CSV</span>
+                </button>
+              </>
             )}
             {onAdd && userCanEdit && (
               <button onClick={onAdd} className="btn-primary flex items-center gap-2 text-sm">

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { authClient } from '@/lib/auth-client';
-import { LogOut, RefreshCw, User, Calendar, ShieldCheck } from 'lucide-react';
+import { LogOut, RefreshCw, User, Calendar, ShieldCheck, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from './NotificationBell';
 
@@ -12,9 +13,10 @@ interface HeaderProps {
   showRefresh?: boolean;
   onRefresh?: () => void;
   actions?: React.ReactNode;
+  onMenuClick?: () => void;
 }
 
-export function Header({ title, subtitle, showRefresh = false, onRefresh, actions }: HeaderProps) {
+export function Header({ title, subtitle, showRefresh = false, onRefresh, actions, onMenuClick }: HeaderProps) {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -60,11 +62,22 @@ export function Header({ title, subtitle, showRefresh = false, onRefresh, action
   return (
     <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-border">
       <div className="px-6 py-4 flex items-center justify-between gap-4">
-        <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {onMenuClick && (
+            <button
+              onClick={onMenuClick}
+              className="lg:hidden p-2 -mr-2 rounded-lg hover:bg-ministry-green-soft text-text-secondary hover:text-ministry-green-deep transition-all"
+              aria-label="القائمة"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
+          <div className="min-w-0">
           {title && <h1 className="text-xl md:text-2xl font-extrabold text-ministry-green-deep truncate">{title}</h1>}
           {subtitle && <p className="text-sm text-text-secondary mt-0.5 truncate">{subtitle}</p>}
+          </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {actions}
           
@@ -118,6 +131,11 @@ export function Header({ title, subtitle, showRefresh = false, onRefresh, action
                       </div>
                     </div>
                     <div className="p-2">
+                      <Link href="/profile" onClick={() => setMenuOpen(false)}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-text-secondary hover:bg-background-alt transition-all">
+                        <User className="w-4 h-4" />
+                        <span>الملف الشخصي</span>
+                      </Link>
                       <button onClick={handleSignOut}
                         className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-all">
                         <LogOut className="w-4 h-4" />

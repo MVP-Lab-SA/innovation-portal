@@ -18,6 +18,8 @@ import {
   Sparkles,
   Compass,
   Gift,
+  ClipboardCheck,
+  Flag,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -47,6 +49,8 @@ export const DASHBOARDS: NavItem[] = [
   { id: 'DASH-14', title: 'المبتكرون', description: 'المبتكرون والأفراد', href: '/dashboards/cems', icon: Sparkles, color: 'text-amber-600' },
   { id: 'DASH-15', title: 'المصادر الاستراتيجية', description: 'مصادر التحديات', href: '/dashboards/strategic-sources', icon: Compass, color: 'text-teal-600' },
   { id: 'DASH-16', title: 'الرعايات', description: 'رعايات الشركاء', href: '/dashboards/sponsorships', icon: Gift, color: 'text-fuchsia-600' },
+  { id: 'DASH-17', title: 'تقييمات الأفكار', description: 'تحليل التقييمات', href: '/dashboards/evaluations', icon: ClipboardCheck, color: 'text-lime-600' },
+  { id: 'DASH-18', title: 'المراحل الرئيسية', description: 'متابعة المراحل', href: '/dashboards/milestones', icon: Flag, color: 'text-sky-600' },
 ];
 
 export const ADMIN_ITEMS: NavItem[] = [

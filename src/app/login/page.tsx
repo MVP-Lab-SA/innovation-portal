@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import { Lock } from 'lucide-react';
 
 const AuthView = dynamic(
@@ -9,6 +10,9 @@ const AuthView = dynamic(
 );
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('next') || '/';
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
@@ -32,7 +36,7 @@ export default function LoginPage() {
           </div>
           
           {/* Render auth widget client-only to avoid SSR hydration mismatches. */}
-          <AuthView pathname="sign-in" />
+          <AuthView pathname="sign-in" redirectTo={redirectTo} />
           
           <div className="mt-6 pt-6 border-t border-border text-center">
             <p className="text-xs text-text-muted">

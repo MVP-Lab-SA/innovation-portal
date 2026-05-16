@@ -7,10 +7,12 @@ import { ChartContainer, DonutChart, BarChartComponent } from '@/components/Char
 import { DataTable } from '@/components/DataTable';
 import { useDashboard } from '@/hooks/useData';
 import { DashboardFilters } from '@/components/DashboardFilters';
-import { CalendarDays, CalendarClock, Users } from 'lucide-react';
+import { EventsCalendar } from '@/components/EventsCalendar';
+import { CalendarDays, CalendarClock, Users, Table2, CalendarRange } from 'lucide-react';
 
 export default function EventsDashboard() {
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [view, setView] = useState<'table' | 'calendar'>('calendar');
   const { data, loading, refresh } = useDashboard<any>('events', filters);
   const k = data?.kpis || {};
   const c = data?.charts || {};
@@ -36,19 +38,40 @@ export default function EventsDashboard() {
         <ChartContainer title="الفعاليات حسب الحالة"><BarChartComponent data={c.byStatus || []} /></ChartContainer>
       </div>
 
-      <DataTable
-        title="قائمة الفعاليات"
-        data={list}
-        entitySlug="calendar-events"
-        columns={[
-          { key: 'code', label: 'المعرّف', width: '100px', type: 'badge' },
-          { key: 'title', label: 'العنوان' },
-          { key: 'eventType', label: 'النوع', type: 'badge' },
-          { key: 'status', label: 'الحالة', type: 'status' },
-          { key: 'startDate', label: 'تاريخ البدء', type: 'date' },
-          { key: 'attendeeCount', label: 'الحضور', type: 'number' },
-        ]}
-      />
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => setView('calendar')}
+          className={view === 'calendar' ? 'btn-primary text-sm flex items-center gap-2' : 'btn-secondary text-sm flex items-center gap-2'}
+        >
+          <CalendarRange className="w-4 h-4" />
+          <span>تقويم</span>
+        </button>
+        <button
+          onClick={() => setView('table')}
+          className={view === 'table' ? 'btn-primary text-sm flex items-center gap-2' : 'btn-secondary text-sm flex items-center gap-2'}
+        >
+          <Table2 className="w-4 h-4" />
+          <span>جدول</span>
+        </button>
+      </div>
+
+      {view === 'calendar' ? (
+        <EventsCalendar events={list} />
+      ) : (
+        <DataTable
+          title="قائمة الفعاليات"
+          data={list}
+          entitySlug="calendar-events"
+          columns={[
+            { key: 'code', label: 'المعرّف', width: '100px', type: 'badge' },
+            { key: 'title', label: 'العنوان' },
+            { key: 'eventType', label: 'النوع', type: 'badge' },
+            { key: 'status', label: 'الحالة', type: 'status' },
+            { key: 'startDate', label: 'تاريخ البدء', type: 'date' },
+            { key: 'attendeeCount', label: 'الحضور', type: 'number' },
+          ]}
+        />
+      )}
     </AppShell>
   );
 }

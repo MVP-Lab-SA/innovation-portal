@@ -24,6 +24,9 @@ interface AppShellProps {
 
 export function AppShell({ children, title, subtitle, showRefresh, onRefresh, actions, manageEntity }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
+  // Mobile drawer state. Resets to closed on navigation (AppShell is mounted
+  // per-page), so links inside the sidebar need no explicit close handler.
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const headerActions = (
     <>
@@ -42,9 +45,21 @@ export function AppShell({ children, title, subtitle, showRefresh, onRefresh, ac
 
   return (
     <div className="min-h-screen">
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
-      <main className={cn('transition-all duration-300', collapsed ? 'mr-20' : 'mr-72')}>
-        <Header title={title} subtitle={subtitle} showRefresh={showRefresh} onRefresh={onRefresh} actions={headerActions} />
+      <Sidebar
+        collapsed={collapsed}
+        onToggle={() => setCollapsed(!collapsed)}
+        mobileOpen={mobileOpen}
+        onMobileClose={() => setMobileOpen(false)}
+      />
+      <main className={cn('transition-all duration-300', collapsed ? 'lg:mr-20' : 'lg:mr-72')}>
+        <Header
+          title={title}
+          subtitle={subtitle}
+          showRefresh={showRefresh}
+          onRefresh={onRefresh}
+          actions={headerActions}
+          onMenuClick={() => setMobileOpen(true)}
+        />
         <div className="p-6 animate-fade-in">{children}</div>
       </main>
     </div>

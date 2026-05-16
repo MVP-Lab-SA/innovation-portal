@@ -59,6 +59,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         return NextResponse.json(await getStrategicSourcesDashboard(f));
       case 'sponsorships':
         return NextResponse.json(await getSponsorshipsDashboard(f));
+      case 'evaluations':
+        return NextResponse.json(await getEvaluationsDashboard(f));
+      case 'milestones':
+        return NextResponse.json(await getMilestonesDashboard(f));
       default:
         return NextResponse.json({ error: 'unknown_dashboard' }, { status: 404 });
     }
@@ -487,5 +491,60 @@ async function getSponsorshipsDashboard(f: DashFilters) {
       byStatus: countByField(sponsorships, 'status'),
     },
     list: sponsorships,
+  };
+}
+
+async function getEvaluationsDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', date: 'evaluationDate' });
+  const evaluations = await prisma.evaluation.findMany({
+    where,
+    include: {
+      idea: { select: { code: true, title: true } },
+      expert: { select: { code: true, fullName: true } },
+    },
+    orderBy: { evaluationDate: 'desc' },
+  });
+  const scored = evaluations.filter(e => e.overallScore != null);
+  const avgScore = scored.length
+    ? Math.round((scored.reduce((s, e) => s + Number(e.overallScore || 0), 0) / scored.length) * 10) / 10
+    : 0;
+  return {
+    kpis: {
+      total: evaluations.length,
+      completed: evaluations.filter(e => e.status === 'مكتملة').length,
+      inProgress: evaluations.filter(e => e.status === 'جارية').length,
+      avgScore,
+    },
+    charts: {
+      byStatus: countByField(evaluations, 'status'),
+      byRecommendation: countByField(evaluations, 'recommendation'),
+    },
+    list: evaluations,
+  };
+}
+
+async function getMilestonesDashboard(f: DashFilters) {
+  const where = buildWhere(f, { status: 'status', date: 'dueDate' });
+  const milestones = await prisma.milestone.findMany({
+    where,
+    include: { initiative: { select: { code: true, name: true } } },
+    orderBy: { dueDate: 'asc' },
+  });
+  const now = new Date();
+  const avgProgress = milestones.length
+    ? Math.round(milestones.reduce((s, m) => s + (m.progress || 0), 0) / milestones.length)
+    : 0;
+  return {
+    kpis: {
+      total: milestones.length,
+      completed: milestones.filter(m => m.status === 'مكتملة' || m.completedDate != null).length,
+      overdue: milestones.filter(m =>
+        m.dueDate != null && new Date(m.dueDate) < now && m.status !== 'مكتملة' && m.completedDate == null).length,
+      avgProgress,
+    },
+    charts: {
+      byStatus: countByField(milestones, 'status'),
+    },
+    list: milestones,
   };
 }

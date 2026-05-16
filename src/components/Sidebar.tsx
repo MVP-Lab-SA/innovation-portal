@@ -9,15 +9,17 @@ import {
   LayoutDashboard, Lightbulb, Trophy, TestTube, FlaskConical,
   Briefcase, Users, AlertTriangle, Target, Megaphone,
   ChevronLeft, Sparkles, Settings, Database, ChevronDown, History,
-  KanbanSquare,
+  KanbanSquare, Search,
 } from 'lucide-react';
 
 interface SidebarProps {
   collapsed?: boolean;
   onToggle?: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed = false, onToggle, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const [userRole, setUserRole] = useState<string | null>(null);
   const isAdmin = userRole === 'ADMIN';
@@ -30,10 +32,20 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   }, []);
 
   return (
-    <aside className={cn(
-      'fixed top-0 right-0 h-screen bg-white border-l border-border transition-all duration-300 z-40 flex flex-col',
-      collapsed ? 'w-20' : 'w-72'
-    )}>
+    <>
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          onClick={onMobileClose}
+          aria-hidden
+        />
+      )}
+      <aside className={cn(
+        'fixed top-0 right-0 h-screen bg-white border-l border-border transition-all duration-300 z-50 flex flex-col',
+        collapsed ? 'w-20' : 'w-72',
+        mobileOpen ? 'translate-x-0' : 'translate-x-full',
+        'lg:translate-x-0',
+      )}>
       <div className="p-4 border-b border-border">
         <Link href="/" className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-ministry-green to-ministry-green-deep flex items-center justify-center shadow-soft flex-shrink-0">
@@ -64,6 +76,14 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         )} title={collapsed ? 'لوحة المهام' : undefined}>
           <KanbanSquare className="w-5 h-5 flex-shrink-0" />
           {!collapsed && <span>لوحة المهام</span>}
+        </Link>
+        <Link href="/search" className={cn(
+          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+          pathname === '/search' ? 'bg-ministry-green text-white shadow-soft'
+            : 'text-text-secondary hover:bg-ministry-green-soft hover:text-ministry-green-deep'
+        )} title={collapsed ? 'البحث الشامل' : undefined}>
+          <Search className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && <span>البحث الشامل</span>}
         </Link>
       </div>
 
@@ -134,13 +154,14 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       </div>
 
       {onToggle && (
-        <div className="p-3 border-t border-border">
+        <div className="p-3 border-t border-border hidden lg:block">
           <button onClick={onToggle} className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm text-text-secondary hover:bg-ministry-green-soft hover:text-ministry-green-deep transition-all">
             <ChevronLeft className={cn('w-4 h-4 transition-transform', !collapsed && 'rotate-180')} />
             {!collapsed && <span>طيّ القائمة</span>}
           </button>
         </div>
       )}
-    </aside>
+      </aside>
+    </>
   );
 }
