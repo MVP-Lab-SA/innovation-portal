@@ -111,10 +111,14 @@ async function syncUserProfile({
 
   if (existing) {
     try {
+      // Avoid a write on every request (notifications stream/polling can be frequent).
+      const shouldTouchLastLogin =
+        !existing.lastLoginAt || (Date.now() - existing.lastLoginAt.getTime()) > 15 * 60 * 1000;
+
       return await prisma.user.update({
         where: { email },
         data: {
-          lastLoginAt: new Date(),
+          ...(shouldTouchLastLogin && { lastLoginAt: new Date() }),
           name: sessionUser.name || existing.name || undefined,
           image: sessionUser.image || existing.image || undefined,
           neonAuthId: existing.neonAuthId || sessionUser.id,
