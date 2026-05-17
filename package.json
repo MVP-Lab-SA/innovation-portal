@@ -26,6 +26,7 @@
     "import:experts": "node scripts/import-experts.mjs",
     "import:initiatives": "node scripts/import-initiatives.mjs",
     "import:tasks": "node scripts/import-tasks.mjs",
+    "relink:tasks": "node scripts/relink-tasks.mjs",
     "normalize:business-challenges": "node scripts/normalize-business-challenges.mjs",
     "cleanup:sample-data": "node scripts/cleanup-sample-data.mjs",
     "create:campaigns": "node scripts/create-campaigns.mjs"
