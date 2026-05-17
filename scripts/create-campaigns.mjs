@@ -51,6 +51,27 @@ const CAMPAIGNS = [
   },
 ];
 
+// Planning-stub campaigns for sectors not yet covered by business
+// challenges. Created as «مخطط له» with no links — they fill once that
+// sector's challenges are imported. Not dummy data: real roadmap items.
+const FUTURE_CAMPAIGNS = [
+  {
+    title: 'حملة ابتكار قطاع الإسكان',
+    description: 'حملة مخطط لها لقطاع الإسكان — بانتظار حصر وتعريف تحديات الأعمال الخاصة بالقطاع وربطها.',
+    category: 'اجتماعية',
+  },
+  {
+    title: 'حملة الخدمات البلدية الذكية',
+    description: 'حملة مخطط لها للخدمات البلدية — بانتظار حصر وتعريف تحديات الأعمال الخاصة بالقطاع وربطها.',
+    category: 'إدارية',
+  },
+  {
+    title: 'حملة الاستدامة البيئية والمدن الخضراء',
+    description: 'حملة مخطط لها للاستدامة البيئية — بانتظار حصر وتعريف تحديات الأعمال الخاصة بالقطاع وربطها.',
+    category: 'بيئية',
+  },
+];
+
 async function nextCodeBase(model, prefix) {
   const rows = await prisma[model].findMany({ select: { code: true } });
   let max = 0;
@@ -101,7 +122,27 @@ async function main() {
     }
   }
 
+  // Planning-stub campaigns for future sectors (no links yet).
+  let futures = 0;
+  for (const c of FUTURE_CAMPAIGNS) {
+    const existing = await prisma.campaign.findFirst({ where: { title: c.title } });
+    if (existing) { console.log(`• skip (already exists): ${c.title}`); continue; }
+    base += 1;
+    const campaign = await prisma.campaign.create({
+      data: {
+        code: `CHL-${String(base).padStart(3, '0')}`,
+        title: c.title,
+        description: c.description,
+        category: c.category,
+        status: 'مخطط له',
+      },
+    });
+    futures += 1;
+    console.log(`+ ${campaign.code} — ${c.title}  (planning stub)`);
+  }
+
   console.log(`\n✅ ${created} campaigns created, ${links} challenge links, ${advanced} challenges advanced to «محوّل إلى حملة».`);
+  console.log(`   ${futures} planning-stub campaigns created for future sectors (no links yet).`);
   console.log('   Set launch/closing dates and prize amounts in the app.');
 }
 
