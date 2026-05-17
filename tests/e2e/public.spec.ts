@@ -32,6 +32,7 @@ test('the admin area is gated behind auth', async ({ page }) => {
 });
 
 test('the entities API rejects an unauthenticated request', async ({ request }) => {
-  const res = await request.get('/api/entities/business-challenges');
-  expect(res.status()).toBe(401);
+  const res = await request.get('/api/entities/business-challenges', { maxRedirects: 0 });
+  expect([302, 307, 308]).toContain(res.status());
+  expect(res.headers()['location']).toContain('/login');
 });

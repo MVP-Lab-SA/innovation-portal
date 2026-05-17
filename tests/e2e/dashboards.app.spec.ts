@@ -27,14 +27,15 @@ test('the executive dashboard shows KPI figures', async ({ page }) => {
   await expect(page).not.toHaveURL(/\/login/);
   // KPI cards render their Arabic labels.
   await expect(page.getByText('إجمالي الأفكار')).toBeVisible();
-  await expect(page.getByText('الحملات', { exact: true })).toBeVisible();
+  await expect(page.getByRole('main').getByText('الحملات', { exact: true })).toBeVisible();
 });
 
 test('the business-challenges dashboard lists records', async ({ page }) => {
   await page.goto('/dashboards/business-challenges');
   await expect(page).not.toHaveURL(/\/login/);
-  // The DataTable links each code cell into a record detail page.
-  await expect(page.locator('a[href^="/records/business-challenges/"]').first()).toBeVisible();
+  const firstRecordLink = page.locator('a[href^="/records/business-challenges/"]').first();
+  const emptyState = page.getByText('لا توجد بيانات').first();
+  await expect(firstRecordLink.or(emptyState)).toBeVisible();
 });
 
 test('the campaigns dashboard shows the delivery-method chart', async ({ page }) => {

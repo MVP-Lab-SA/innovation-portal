@@ -10,7 +10,9 @@ test('the admin data page opens an entity table', async ({ page }) => {
   await expect(page).not.toHaveURL(/\/login/);
   await expect(page.locator('h1').first()).toBeVisible();
   // Either the data table or an empty-state is shown.
-  await expect(page.locator('table, text=لا توجد').first()).toBeVisible();
+  const table = page.locator('table').first();
+  const emptyState = page.getByText('لا توجد').first();
+  await expect(table.or(emptyState)).toBeVisible();
 });
 
 test('the business-challenges entity is manageable in admin', async ({ page }) => {
