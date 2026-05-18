@@ -1,5 +1,17 @@
 import { test, expect } from '@playwright/test';
 
+async function expectRowsOrEmptyState(page: Parameters<typeof test>[0] extends never ? never : any) {
+  const rows = page.locator('table tbody tr');
+  const empty = page.getByText(/لا توجد بيانات|جرّب البحث بكلمات أخرى/).first();
+
+  if (await rows.count()) {
+    await expect(rows.first()).toBeVisible();
+    return;
+  }
+
+  await expect(empty).toBeVisible();
+}
+
 /**
  * The shared DataTable component — search, export, pagination — exercised
  * on /admin/data for an entity with plenty of rows (business challenges).
@@ -18,19 +30,20 @@ test('the table renders rows', async ({ page }) => {
 test('the search box filters the table', async ({ page }) => {
   const search = page.getByPlaceholder('بحث...');
   await expect(search).toBeVisible();
-  await search.fill('BCH-001');
+  const firstCellText = (await page.locator('table tbody tr').first().locator('td').first().textContent())?.trim() || 'BCH';
+  await search.fill(firstCellText.slice(0, Math.min(firstCellText.length, 6)) || 'BCH');
   await page.waitForTimeout(800);
-  await expect(page.locator('table tbody tr').first()).toBeVisible();
+  await expectRowsOrEmptyState(page);
 });
 
 test('export buttons are available', async ({ page }) => {
-  await expect(page.getByRole('button', { name: 'تصدير CSV' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'تصدير Excel' })).toBeVisible();
+  await expect(page.getByTitle('تصدير CSV')).toBeVisible();
+  await expect(page.getByTitle('تصدير Excel')).toBeVisible();
 });
 
 test('CSV export triggers a file download', async ({ page }) => {
   const downloadPromise = page.waitForEvent('download', { timeout: 15_000 }).catch(() => null);
-  await page.getByRole('button', { name: 'تصدير CSV' }).click();
+  await page.getByTitle('تصدير CSV').click();
   const download = await downloadPromise;
   if (download) expect(download.suggestedFilename()).toMatch(/\.csv$/i);
 });

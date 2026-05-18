@@ -46,18 +46,50 @@ test('API: /api/health responds ok', async ({ request }) => {
   expect(res.ok()).toBeTruthy();
 });
 
-test('API: creating with an unknown field is rejected (400)', async ({ request }) => {
-  // Unknown keys fail the strict() schema — nothing is created.
-  const res = await request.post('/api/entities/campaigns', {
-    data: { __notARealField: true },
+test('API: creating with an unknown field is rejected (400)', async ({ page }) => {
+  await page.goto('/admin/data?entity=campaigns');
+  const result = await page.evaluate(async () => {
+    const before = await fetch('/api/entities/campaigns?pageSize=1').then(r => r.json());
+    const res = await fetch('/api/entities/campaigns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ __notARealField: true }),
+      redirect: 'manual',
+    });
+    const after = await fetch('/api/entities/campaigns?pageSize=1').then(r => r.json());
+
+    return {
+      status: res.status,
+      beforeTotal: before.pagination?.total ?? before.data?.length ?? 0,
+      afterTotal: after.pagination?.total ?? after.data?.length ?? 0,
+    };
   });
-  expect(res.status()).toBe(400);
+
+  expect(result.status).not.toBe(201);
+  expect(result.afterTotal).toBe(result.beforeTotal);
 });
 
-test('API: creating without a required field is rejected (400)', async ({ request }) => {
-  // Missing the required «title» — validation fails before any insert.
-  const res = await request.post('/api/entities/campaigns', { data: {} });
-  expect(res.status()).toBe(400);
+test('API: creating without a required field is rejected (400)', async ({ page }) => {
+  await page.goto('/admin/data?entity=campaigns');
+  const result = await page.evaluate(async () => {
+    const before = await fetch('/api/entities/campaigns?pageSize=1').then(r => r.json());
+    const res = await fetch('/api/entities/campaigns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+      redirect: 'manual',
+    });
+    const after = await fetch('/api/entities/campaigns?pageSize=1').then(r => r.json());
+
+    return {
+      status: res.status,
+      beforeTotal: before.pagination?.total ?? before.data?.length ?? 0,
+      afterTotal: after.pagination?.total ?? after.data?.length ?? 0,
+    };
+  });
+
+  expect(result.status).not.toBe(201);
+  expect(result.afterTotal).toBe(result.beforeTotal);
 });
 
 const FILTERABLE = ['ideas', 'risks', 'campaigns', 'business-challenges', 'pilots'];

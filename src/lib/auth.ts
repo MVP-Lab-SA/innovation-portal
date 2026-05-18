@@ -12,6 +12,7 @@ const NEON_AUTH_COOKIE_SECRET = process.env.NEON_AUTH_COOKIE_SECRET || process.e
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const IS_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
+const SESSION_DATA_TTL_SECONDS = IS_PRODUCTION ? 300 : 60 * 60;
 
 // Log critical misconfiguration loudly but DO NOT throw at module load — a
 // throw here crashes every route, not just /api/auth/*. The auth handler
@@ -28,21 +29,26 @@ if (IS_PRODUCTION && !IS_BUILD) {
 }
 
 // Cookie secret. When NEON_AUTH_COOKIE_SECRET is unset we fall back to a
-// RANDOM, per-process value (edge-safe — no Node crypto, since middleware
-// imports this module on the Edge runtime). Rationale:
-//   - dev / build: single process, works fine.
+// deterministic local dev value outside production, and a RANDOM per-process
+// value in production-like environments without a configured secret (edge-safe
+// — no Node crypto, since middleware imports this module on the Edge runtime).
+// Rationale:
+//   - dev / build: stable across restarts, so local auth and Playwright state work.
 //   - prod with a missing secret: each serverless instance generates its own
 //     secret, so sessions can't validate across instances — a visible login
 //     loop. That fail-closed behavior is correct: a predictable/deterministic
 //     fallback would let anyone reading this (public) repo forge admin cookies.
 // Operators MUST set NEON_AUTH_COOKIE_SECRET in production (>=32 chars).
 const COOKIE_SECRET = NEON_AUTH_COOKIE_SECRET
-  || Array.from({ length: 4 }, () => Math.random().toString(36).slice(2)).join('');
+  || (!IS_PRODUCTION
+    ? 'local-dev-only-neon-auth-cookie-secret-change-me'
+    : Array.from({ length: 4 }, () => Math.random().toString(36).slice(2)).join(''));
 
 export const auth = createNeonAuth({
   baseUrl: NEON_AUTH_BASE_URL,
   cookies: {
     secret: COOKIE_SECRET,
+    sessionDataTtl: SESSION_DATA_TTL_SECONDS,
   },
 });
 

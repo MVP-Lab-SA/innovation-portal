@@ -14,7 +14,12 @@ test('the tasks board shows status columns or content', async ({ page }) => {
   // Columns derive from the TaskStatus lookup; «جديدة» is a standard value.
   const column = page.getByText('جديدة').first();
   const empty = page.getByText(/لا توجد|لا يوجد/).first();
-  await expect(column.or(empty)).toBeVisible({ timeout: 20_000 });
+  if (await column.count()) {
+    await expect(column).toBeVisible({ timeout: 20_000 });
+    return;
+  }
+
+  await expect(empty).toBeVisible({ timeout: 20_000 });
 });
 
 test('a task card links into its record detail page', async ({ page }) => {
@@ -22,5 +27,10 @@ test('a task card links into its record detail page', async ({ page }) => {
   await expect(page).not.toHaveURL(/\/login/);
   const card = page.locator('a[href^="/records/tasks/"]').first();
   const empty = page.getByText(/لا توجد|لا يوجد/).first();
-  await expect(card.or(empty)).toBeVisible({ timeout: 20_000 });
+  if (await card.count()) {
+    await expect(card).toBeVisible({ timeout: 20_000 });
+    return;
+  }
+
+  await expect(empty).toBeVisible({ timeout: 20_000 });
 });
