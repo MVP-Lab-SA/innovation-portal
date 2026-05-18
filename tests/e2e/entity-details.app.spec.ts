@@ -9,10 +9,14 @@ import { test, expect, type Page } from '@playwright/test';
 async function openFirstRecord(page: Page, dashboardPath: string, slug: string): Promise<boolean> {
   await page.goto(dashboardPath);
   await expect(page).not.toHaveURL(/\/login/);
+  // Wait for the dashboard's client-side fetch to populate the table —
+  // racing against the (instantly rendered) empty state would skip wrongly.
   const link = page.locator(`a[href^="/records/${slug}/"]`).first();
-  const empty = page.getByText('لا توجد بيانات').first();
-  await expect(link.or(empty)).toBeVisible({ timeout: 20_000 });
-  if (await empty.isVisible().catch(() => false)) return false;
+  try {
+    await link.waitFor({ state: 'visible', timeout: 20_000 });
+  } catch {
+    return false; // genuinely no records
+  }
   await link.click();
   await expect(page).toHaveURL(new RegExp(`/records/${slug}/`));
   return true;

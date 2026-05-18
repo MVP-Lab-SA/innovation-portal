@@ -46,8 +46,11 @@ test('the create form renders a relation picker for FK fields', async ({ page })
 test('the edit form opens prefilled from a record', async ({ page }) => {
   await page.goto('/admin/data?entity=campaigns');
   await expect(page).not.toHaveURL(/\/login/);
-  const editBtn = page.getByRole('button', { name: 'تعديل' }).first();
-  test.skip(!(await editBtn.count()), 'no editable records');
+  // Wait for the table to populate before looking for the row action.
+  await page.locator('table tbody tr').first()
+    .waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {});
+  const editBtn = page.getByTitle('تعديل').first(); // row edit is an icon button
+  if (!(await editBtn.count())) { test.skip(true, 'no editable records'); return; }
   await editBtn.click();
   await expect(page.getByRole('heading', { name: /تعديل/ })).toBeVisible();
   await page.getByRole('button', { name: 'إلغاء' }).click();

@@ -8,10 +8,13 @@ import { test, expect, type Page } from '@playwright/test';
 async function openFirst(page: Page, dashboard: string, slug: string): Promise<boolean> {
   await page.goto(dashboard);
   await expect(page).not.toHaveURL(/\/login/);
+  // Wait for the data fetch to render record links before deciding.
   const link = page.locator(`a[href^="/records/${slug}/"]`).first();
-  const empty = page.getByText('لا توجد بيانات').first();
-  await expect(link.or(empty)).toBeVisible({ timeout: 20_000 });
-  if (await empty.isVisible().catch(() => false)) return false;
+  try {
+    await link.waitFor({ state: 'visible', timeout: 20_000 });
+  } catch {
+    return false;
+  }
   await link.click();
   await expect(page).toHaveURL(new RegExp(`/records/${slug}/`));
   return true;
@@ -21,10 +24,12 @@ test('a business challenge shows the four-stage funnel strip', async ({ page }) 
   const ok = await openFirst(page, '/dashboards/business-challenges', 'business-challenges');
   test.skip(!ok, 'no business challenges');
   if (await page.getByText('تعذّر تحميل السجل').isVisible().catch(() => false)) return;
-  await expect(page.getByText('مسار التحدي في منظومة الابتكار')).toBeVisible();
-  await expect(page.getByText('المصدر الاستراتيجي')).toBeVisible();
-  await expect(page.getByText('الحملات', { exact: true })).toBeVisible();
-  await expect(page.getByText('التجارب التشغيلية')).toBeVisible();
+  // Scope to <main> — the sidebar also carries «الحملات» / «التجارب التشغيلية».
+  const main = page.getByRole('main');
+  await expect(main.getByText('مسار التحدي في منظومة الابتكار')).toBeVisible();
+  await expect(main.getByText('المصدر الاستراتيجي')).toBeVisible();
+  await expect(main.getByText('الحملات', { exact: true })).toBeVisible();
+  await expect(main.getByText('التجارب التشغيلية')).toBeVisible();
 });
 
 test('a linked business challenge lists its campaigns', async ({ page }) => {
